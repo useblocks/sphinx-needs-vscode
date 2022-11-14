@@ -1,0 +1,23 @@
+{
+    "name": "sphinx-needs-server",
+    "description": "Implementation of sphinx-needs language server in node.",
+    "author": {
+        "name": "team useblocks"
+    },
+    "version": "0.1.0",
+    "license": "MIT",
+    "engines": {
+        "node": "*"
+    },
+    "repository": {
+        "type": "git",
+        "url": ""
+    },
+    "dependencies": {
+        "vscode-languageserver": "8.0.2",
+        "vscode-languageserver-textdocument": "1.0.7"
+    },
+    "devDependencies": {
+        "@types/vscode": "1.67.0"
+    }
+}

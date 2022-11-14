@@ -1,0 +1,38 @@
+{
+    "created": "2022-11-04T13:36:04.265551",
+    "current_version": "1.0",
+    "project": "Sphinx-Needs",
+    "versions": {
+        "1.0": {
+            "created": "2022-11-04T13:36:04.265489",
+            "filters": {},
+            "filters_amount": 0,
+            "needs": {
+                "REQ_1": {
+                    "id": "REQ_1",
+                    "title": "example req",
+                    "type": "req",
+                    "description": "Description for REQ_1.",
+                    "docname": "index",
+                    "doctype": ".rst"
+                },
+                "SPEC_1": {
+                    "id": "SPEC_1",
+                    "title": "example spec",
+                    "type": "spec",
+                    "description": "Description for SPEC_1.",
+                    "docname": "index",
+                    "doctype": ".rst"
+                },
+                "REQ_2": {
+                    "id": "REQ_2",
+                    "title": "example second req",
+                    "type": "req",
+                    "description": "Description for REQ_2.",
+                    "docname": "mySubFolder/sub",
+                    "doctype": ".rst"
+                }
+            }
+        }
+    }
+}
