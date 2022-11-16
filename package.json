@@ -40,7 +40,14 @@
                 "sphinx-needs.needsJson": {
                     "type": "string",
                     "scope": "resource",
-                    "default": "${workspaceFolder}/needs_small.json"
+                    "default": "",
+                    "description": "Sphinx-Needs generated Needs Json file path."
+                },
+                "sphinx-needs.srcDir": {
+                    "type": "string",
+                    "scope": "resource",
+                    "default": "",
+                    "description": "Sphinx-Needs docs source directory."
                 }
             }
         }

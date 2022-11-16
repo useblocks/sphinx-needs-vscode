@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { workspace, window, ExtensionContext } from 'vscode';
+import { workspace, ExtensionContext } from 'vscode';
 
 import {
   LanguageClient,
@@ -37,21 +37,6 @@ export function activate(context: ExtensionContext) {
       fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
     }
   };
-
-  // Get configuration of needs.json
-  // console.log(`workspace name: ${workspace.name}`);
-
-  // let needs_json_path: string = workspace.getConfiguration('sphinx-needs').get('needsJson');
-  // const currentWorkspaceFolderPath = workspace.getWorkspaceFolder(window.activeTextEditor.document.uri)?.uri.fsPath
-  // needs_json_path = needs_json_path.replace('${workspaceFolder}', currentWorkspaceFolderPath)
-
-  // console.log(`needs json path: ${needs_json_path}`)
-  // // Read json file
-	// const fs = require('fs');
-  // const data = fs.readFileSync(needs_json_path, 'utf8');
-  // const needs_json = JSON.parse(data);
-  // console.log(`needs json.project: ${needs_json.project}`);
-
 
   // Create the language client and start the client.
   client = new LanguageClient(

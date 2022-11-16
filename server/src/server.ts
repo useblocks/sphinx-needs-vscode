@@ -34,80 +34,8 @@ let hasDiagnosticRelatedInformationCapability = false;
 let workspace_folder_name: string;
 let workspace_folder_uri: DocumentUri;
 
-connection.onInitialize((params: InitializeParams) => {
-	workspace_folder_name = params.workspaceFolders[0].name;
-	workspace_folder_uri = params.workspaceFolders[0].uri;
-	connection.console.log(`workspace folder name: ${workspace_folder_name}`);
-	connection.console.log(`workspace folder uri: ${workspace_folder_uri}`);
-
-	const capabilities = params.capabilities;
-
-	// Does the client support the `workspace/configuration` request?
-	// If not, we fall back using global settings.
-	hasConfigurationCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.configuration
-	);
-	hasWorkspaceFolderCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.workspaceFolders
-	);
-	hasDiagnosticRelatedInformationCapability = !!(
-		capabilities.textDocument &&
-		capabilities.textDocument.publishDiagnostics &&
-		capabilities.textDocument.publishDiagnostics.relatedInformation
-	);
-
-	const result: InitializeResult = {
-		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Incremental,
-			// Tell the client that this server supports code completion.
-			completionProvider: {
-				triggerCharacters: [':', '.', '/', '>'],
-				resolveProvider: true
-			},
-			// Supports hover
-			hoverProvider: true,
-			// Supports goto definition
-			definitionProvider: true,
-		}
-	};
-
-	connection.console.log(`HasWorkspaceFolderCapabilitiy: ${hasWorkspaceFolderCapability}`);
-	connection.console.log(`HasConfigurationCapability: ${hasConfigurationCapability}`);
-	if (hasWorkspaceFolderCapability) {
-		result.capabilities.workspace = {
-			workspaceFolders: {
-				supported: true
-			}
-		};
-	}
-	return result;
-});
-
-connection.onInitialized(() => {
-	if (hasConfigurationCapability) {
-		// Register for all configuration changes.
-		connection.client.register(DidChangeConfigurationNotification.type, undefined);
-	}
-	if (hasWorkspaceFolderCapability) {
-		connection.workspace.onDidChangeWorkspaceFolders(_event => {
-			connection.console.log('Workspace folder change event received.');
-		});
-	}
-});
-
-connection.onDidChangeConfiguration(change => {
-
-	// TODO: check if needs.json path changed or content updated
-	connection.console.log(`wk folder: ${workspace_folder_uri}`);
-	const conf_needs = connection.workspace.getConfiguration('sphinx-needs'); // it's a promise pending, how to get the value
-	connection.console.log(`conf needs json: ${conf_needs}`);
-
-});
-
-connection.onDidChangeWatchedFiles(_change => {
-	// Monitored files have change in VSCode
-	connection.console.log('We received an file change event');
-});
+var needs_info: NeedsTypesDocsInfo;
+var doc_src_dir: string;
 
 // Define type of Need, Needs, NeedsJsonObject, and NeedsTypesDocsInfo
 interface NeedsJsonObj {
@@ -149,13 +77,122 @@ interface NeedsTypesDocsInfo {
 	};
 }
 
+connection.onInitialize((params: InitializeParams) => {
+	workspace_folder_name = params.workspaceFolders[0].name;
+	workspace_folder_uri = params.workspaceFolders[0].uri;
+
+	const capabilities = params.capabilities;
+
+	// Does the client support the `workspace/configuration` request?
+	// If not, we fall back using global settings.
+	hasConfigurationCapability = !!(
+		capabilities.workspace && !!capabilities.workspace.configuration
+	);
+	hasWorkspaceFolderCapability = !!(
+		capabilities.workspace && !!capabilities.workspace.workspaceFolders
+	);
+	hasDiagnosticRelatedInformationCapability = !!(
+		capabilities.textDocument &&
+		capabilities.textDocument.publishDiagnostics &&
+		capabilities.textDocument.publishDiagnostics.relatedInformation
+	);
+
+	const result: InitializeResult = {
+		capabilities: {
+			textDocumentSync: TextDocumentSyncKind.Incremental,
+			// Tell the client that this server supports code completion.
+			completionProvider: {
+				triggerCharacters: [':', '.', '/', '>'],
+				resolveProvider: true
+			},
+			// Supports hover
+			hoverProvider: true,
+			// Supports goto definition
+			definitionProvider: true,
+		}
+	};
+
+	if (hasWorkspaceFolderCapability) {
+		result.capabilities.workspace = {
+			workspaceFolders: {
+				supported: true
+			}
+		};
+	}
+	return result;
+});
+
+connection.onInitialized(async () => {
+	if (hasConfigurationCapability) {
+		// Register for all configuration changes.
+		connection.client.register(DidChangeConfigurationNotification.type, undefined);
+	}
+	if (hasWorkspaceFolderCapability) {
+		connection.workspace.onDidChangeWorkspaceFolders(_event => {
+			connection.console.log('Workspace folder change event received.');
+		});
+	}
+
+	// Get workspace configuration settings of needsJson and srcDir
+	// Extract needs info from given needs json path
+	get_wk_conf_settings();
+
+});
+
+// Get and update workspace settings
+async function get_wk_conf_settings() {
+	// Get configuration settings
+	const conf_settings = await connection.workspace.getConfiguration('sphinx-needs');
+	const conf_settings_loader = (result) => {
+		const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
+		const needs_json_path = result.needsJson.replace('${workspaceFolder}', cal_wk_folder_uri);
+		const src_dir = result.srcDir.replace('${workspaceFolder}', cal_wk_folder_uri);
+		return [needs_json_path, src_dir];
+	}
+
+	// Get setting of needsJson: needs json path
+	const needs_json_path = conf_settings_loader(conf_settings)[0];
+	// Check if given needs json path empty before loading
+	if (needs_json_path === '') {
+		connection.window.showWarningMessage('Extension Sphinx-Needs: needs json path not configured.');
+		needs_info = undefined;
+	} else {
+		needs_info = load_needs_info_from_json(needs_json_path);
+	}
+
+	// Get setting of srcDir: current docs source directory for sphinx-needs project
+	doc_src_dir = conf_settings_loader(conf_settings)[1];
+	if (doc_src_dir === '') {
+		connection.window.showWarningMessage('Extension Sphinx-Needs: srcDir not configured.');
+	}
+
+}
+
+connection.onDidChangeConfiguration(async (_change) => {
+	connection.console.log('Configuration changed.');
+	// Update workspace configuration settings
+	get_wk_conf_settings();
+	connection.console.log('Worksapce settings updated.');
+	
+});
+
+connection.onDidChangeWatchedFiles(_change => {
+	// Monitored files have change in VSCode
+	connection.console.log('We received an file change event');
+});
+
 function read_needs_json(given_needs_json_path) {
 	// Read json file
 	const fs = require('fs');
 
 	// Check if given needs.json path exists
-	// const needs_json_path = '/home/haiyang/work/useblocks/github/sphinx-needs-ide/server/src/needs_small.json'
 	const needs_json_path = given_needs_json_path;
+
+	if (!fs.existsSync(needs_json_path)) {
+		connection.console.log(`Given needs.json not found: ${needs_json_path}`);
+		connection.window.showWarningMessage(`Given needsJson path: ${needs_json_path} not exists. No language features avaiable.`);
+		return;
+	}
 
 	try {
 		const data = fs.readFileSync(needs_json_path, 'utf8');
@@ -165,18 +202,16 @@ function read_needs_json(given_needs_json_path) {
 		connection.console.log(err);
 	}
 
-	// if (fs.existsSync(needs_json_path)) {
-	// 	const data = fs.readFileSync(needs_json_path, 'utf8');
-	// 	const needs_json: NeedsJsonObj = JSON.parse(data);
-	// } else {
-	// 	connection.console.log('No needs.json found!');
-	// }
 	return;
 }
 
 function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDocsInfo {
 	// Read and parse given needs.json file
 	const needs_json = read_needs_json(given_needs_json_path);
+
+	if (!needs_json) {
+		return undefined;
+	}
 
 	// Load needs from latest version
 	const needs_latest_version = Object.keys(needs_json.versions).sort().at(-1);
@@ -210,33 +245,6 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 	return needs_types_docs_info;
 
 }
-
-// // Load needs from latest version
-// const needs_json = read_needs_json()
-// const needs_latest_version = Object.keys(needs_json.versions).sort().at(-1);
-// const needs: Needs = needs_json.versions[needs_latest_version].needs;
-
-// // Get need types, docs_per_type, and needs_per_doc
-// const needs_types = [];
-// const docs_per_type = {};
-// const needs_per_doc = {};
-// Object.values(needs).forEach(need => {
-// 	if (!(need['type'] in docs_per_type)) {
-// 		needs_types.push(need['type'])
-// 		docs_per_type[need['type']] = []
-// 	}
-// 	const need_doc_name = need.docname + need.doctype;
-// 	if (!(docs_per_type[need['type']].includes(need_doc_name))) {
-// 		docs_per_type[need['type']].push(need_doc_name)
-// 	}
-
-// 	if (!(need_doc_name in needs_per_doc)) {
-// 		needs_per_doc[need_doc_name] = []
-// 	}
-// 	needs_per_doc[need_doc_name].push(need)
-// });
-
-//#################################################//
 
 // Get the word in a line of text at a given character positioon
 function get_word(params: TextDocumentPositionParams): string {
@@ -442,13 +450,11 @@ connection.onCompletion(
 	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
 		// The pass parameter contains the position of the text document in
 		// which code complete got requested.
+		if (!needs_info) {
+			connection.console.log('No needs info extracted from needs json. No completion feature.');
+			return;
+		}
 		connection.console.log('Completion feature...');
-		connection.console.log(`${workspace_folder_uri}`);
-
-		// Read and load given needs.json
-		const given_needs_json_path: string = workspace_folder_uri.replace('file://', '') + '/' + 'needs_small.json';
-		const needs_info = load_needs_info_from_json(given_needs_json_path);
-
 
 		const context_word = get_word(_textDocumentPosition);
 		
@@ -516,10 +522,12 @@ connection.onCompletionResolve(
 // Hover feature for Sphinx-Needs
 connection.onHover(
 	(_textDocumentPosition: TextDocumentPositionParams): Hover => {
+		if (!needs_info) {
+			connection.console.log('No needs info extracted from needs json. No Hover feature.');
+			return;
+		}
 
-		// Read and load given needs.json
-		const given_needs_json_path: string = workspace_folder_uri.replace('file://', '') + '/' + 'needs_small.json';
-		const needs_info = load_needs_info_from_json(given_needs_json_path);
+		connection.console.log('Hover feature...');
 
 		// Get need_id from hover context
 		const need_id = get_word(_textDocumentPosition)
@@ -552,10 +560,23 @@ connection.onHover(
 connection.onDefinition(
 	(_textDocumentPosition: TextDocumentPositionParams): Definition => {
 		// Return location of definition of a need
+		if (!needs_info) {
+			connection.console.log('No needs info extracted from needs json. No Goto Definition feature.');
+			return;
+		}
 
-		// Read and load given needs.json
-		const given_needs_json_path: string = workspace_folder_uri.replace('file://', '') + '/' + 'needs_small.json';
-		const needs_info = load_needs_info_from_json(given_needs_json_path);
+		const fs = require('fs');
+		if (!doc_src_dir) {
+			connection.console.log('No srcDir. No Goto Definition feature.');
+			return;
+		} else if (!fs.existsSync(doc_src_dir)) {
+			// Check if given srcDir exists
+			connection.console.log(`srcDir path: ${doc_src_dir} not exists. No Goto Definition feature.`);
+			connection.window.showWarningMessage(`srcDir path: ${doc_src_dir} not exists. No Goto Definition feature.`);
+			return;
+		}
+
+		connection.console.log('Goto Definition...');
 
 		// Check current context is actually a need
 		const need_id = get_word(_textDocumentPosition)
@@ -565,10 +586,15 @@ connection.onDefinition(
 
 		// Get the doc path of the need
 		const curr_need: Need = needs_info.needs[need_id]
-		const conf_py_path = workspace_folder_uri.replace('file://', '') + '/'
-		const doc_path = conf_py_path + curr_need.docname + curr_need.doctype
+		let conf_py_path: string;
+		if (doc_src_dir.endsWith('/')) {
+			conf_py_path = doc_src_dir;
+		} else {
+			conf_py_path = doc_src_dir + '/';
+		}
+		const doc_path = conf_py_path + curr_need.docname + curr_need.doctype;
 
-		const fs = require('fs');
+		//const fs = require('fs');
 		try {
 			const doc_content: string = fs.readFileSync(doc_path, 'utf8');
 			const doc_content_lines = doc_content.split('\n');
