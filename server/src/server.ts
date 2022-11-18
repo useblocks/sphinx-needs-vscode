@@ -36,6 +36,7 @@ let workspace_folder_uri: DocumentUri;
 
 var needs_info: NeedsTypesDocsInfo;
 var doc_src_dir: string;
+var needs_json_path: string;
 
 // Define type of Need, Needs, NeedsJsonObject, and NeedsTypesDocsInfo
 interface NeedsJsonObj {
@@ -134,8 +135,14 @@ connection.onInitialized(async () => {
 	}
 
 	// Get workspace configuration settings of needsJson and srcDir
+	await get_wk_conf_settings();
+
 	// Extract needs info from given needs json path
-	get_wk_conf_settings();
+	if (needs_json_path === '') {
+		needs_info = undefined;
+	} else {
+		needs_info = load_needs_info_from_json(needs_json_path);
+	}
 
 });
 
@@ -145,19 +152,16 @@ async function get_wk_conf_settings() {
 	const conf_settings = await connection.workspace.getConfiguration('sphinx-needs');
 	const conf_settings_loader = (result) => {
 		const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
-		const needs_json_path = result.needsJson.replace('${workspaceFolder}', cal_wk_folder_uri);
+		const conf_needs_json_path = result.needsJson.replace('${workspaceFolder}', cal_wk_folder_uri);
 		const src_dir = result.srcDir.replace('${workspaceFolder}', cal_wk_folder_uri);
-		return [needs_json_path, src_dir];
+		return [conf_needs_json_path, src_dir];
 	}
 
 	// Get setting of needsJson: needs json path
-	const needs_json_path = conf_settings_loader(conf_settings)[0];
-	// Check if given needs json path empty before loading
+	needs_json_path = conf_settings_loader(conf_settings)[0];
+	// Check if given needs json path empty
 	if (needs_json_path === '') {
 		connection.window.showWarningMessage('Extension Sphinx-Needs: needs json path not configured.');
-		needs_info = undefined;
-	} else {
-		needs_info = load_needs_info_from_json(needs_json_path);
 	}
 
 	// Get setting of srcDir: current docs source directory for sphinx-needs project
@@ -171,7 +175,14 @@ async function get_wk_conf_settings() {
 connection.onDidChangeConfiguration(async (_change) => {
 	connection.console.log('Configuration changed.');
 	// Update workspace configuration settings
-	get_wk_conf_settings();
+	await get_wk_conf_settings();
+
+	if (needs_json_path === '') {
+		needs_info = undefined;
+	} else {
+		needs_info = load_needs_info_from_json(needs_json_path);
+	}
+
 	connection.console.log('Worksapce settings updated.');
 	
 });
@@ -179,6 +190,34 @@ connection.onDidChangeConfiguration(async (_change) => {
 connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
 	connection.console.log('We received an file change event');
+
+	// Check changed file, only watched 1 file
+	const file_changes = _change.changes[0];
+
+	const curr_file_uri = file_changes.uri.replace('file://', '');
+
+	// Check file change type
+	if (file_changes.type == 1) {
+		// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
+		if (curr_file_uri === needs_json_path) {
+			connection.console.log('NeedsJson file created.');
+			// Update needs_info by reloading json file again
+			needs_info = load_needs_info_from_json(needs_json_path);
+		}
+	} else if (file_changes.type === 3) {
+		connection.console.log('NeedsJson file got deleted or renmaed.');
+		connection.window.showWarningMessage('Oops! NeedsJson file got deleted or renmaed. Please sync with configuration of sphinx-needs.needsJson.');
+	} else if (file_changes.type === 2) {
+		// Check if changed file the same as in workspace configuration of needsJson
+		if (curr_file_uri === needs_json_path) {
+			// NeedsJson File content got updated
+			connection.console.log('NeedsJson file content update detected.');
+
+			// Update needs_info by reloading json file again
+			needs_info = load_needs_info_from_json(needs_json_path);
+		}
+	}
+
 });
 
 function read_needs_json(given_needs_json_path) {
@@ -216,6 +255,12 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 	// Load needs from latest version
 	const needs_latest_version = Object.keys(needs_json.versions).sort().at(-1);
 	const needs: Needs = needs_json.versions[needs_latest_version].needs;
+
+	// Check needs not empty
+	if (Object.keys(needs).length === 0) {
+		connection.console.log('No needs found in given needsJson file.');
+		return undefined;
+	}
 
 	// Initialize needs_types_docs_info
 	let needs_types_docs_info: NeedsTypesDocsInfo = {

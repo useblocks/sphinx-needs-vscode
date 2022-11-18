@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import { workspace, window, ExtensionContext } from 'vscode';
 
 import {
   LanguageClient,
@@ -28,13 +28,18 @@ export function activate(context: ExtensionContext) {
     }
   };
 
+  // Get workspace configuration of needsJson
+  let needs_json_path: string = workspace.getConfiguration('sphinx-needs').get('needsJson');
+  const currentWorkspaceFolderPath = workspace.getWorkspaceFolder(window.activeTextEditor.document.uri)?.uri.fsPath
+  needs_json_path = needs_json_path.replace('${workspaceFolder}', currentWorkspaceFolderPath)
+
   // Options to control the language client
   let clientOptions: LanguageClientOptions = {
     // Register the server for rst documents
     documentSelector: [{ scheme: 'file', language: 'restructuredtext' }],
     synchronize: {
-      // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+      // Notify the server about file changes to .json files contained in the workspace
+      fileEvents: workspace.createFileSystemWatcher('**/*.json')
     }
   };
 
