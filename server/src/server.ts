@@ -13,6 +13,7 @@ import {
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult,
+	FileEvent,
 } from 'vscode-languageserver/node';
 
 import {
@@ -191,25 +192,29 @@ connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
 	connection.console.log('We received an file change event');
 
-	// Check changed file, only watched 1 file
-	const file_changes = _change.changes[0];
+	// Check if needs json file is among the changed files
+	let needs_json_file_changes: FileEvent;
+	const changed_files = _change.changes;
+	changed_files.forEach(changed_file => {
+		const changed_file_uri = changed_file.uri.replace('file://', '');
+		if (changed_file_uri === needs_json_path) {
+			needs_json_file_changes = changed_file;
+		}
+	});
 
-	const curr_file_uri = file_changes.uri.replace('file://', '');
-
-	// Check file change type
-	if (file_changes.type == 1) {
-		// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
-		if (curr_file_uri === needs_json_path) {
+	// Needs Json file changed
+	if (needs_json_file_changes) {
+		// Check file change type
+		if (needs_json_file_changes.type == 1) {
+			// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
 			connection.console.log('NeedsJson file created.');
 			// Update needs_info by reloading json file again
 			needs_info = load_needs_info_from_json(needs_json_path);
-		}
-	} else if (file_changes.type === 3) {
-		connection.console.log('NeedsJson file got deleted or renmaed.');
-		connection.window.showWarningMessage('Oops! NeedsJson file got deleted or renmaed. Please sync with configuration of sphinx-needs.needsJson.');
-	} else if (file_changes.type === 2) {
-		// Check if changed file the same as in workspace configuration of needsJson
-		if (curr_file_uri === needs_json_path) {
+			
+		} else if (needs_json_file_changes.type === 3) {
+			connection.console.log('NeedsJson file got deleted or renmaed.');
+			connection.window.showWarningMessage('Oops! NeedsJson file got deleted or renmaed. Please sync with configuration of sphinx-needs.needsJson.');
+		} else if (needs_json_file_changes.type === 2) {
 			// NeedsJson File content got updated
 			connection.console.log('NeedsJson file content update detected.');
 
