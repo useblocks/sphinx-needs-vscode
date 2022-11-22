@@ -23,16 +23,12 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Install poetry
-        run: pipx install poetry
-      # https://github.com/marketplace/actions/setup-python
       - name: Install Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-          cache: 'poetry'
-      - name: Install project
-        run: poetry install
+      - name: Install doc deps
+        run: pip install -r docs/requirements.txt
       - name: Debugging information
         run: |
           echo "github.ref:" ${{github.ref}}
@@ -54,8 +50,9 @@ jobs:
       - name: Build Sphinx docs
         run: |
           cd docs
-          poetry run make html
-      
+          sphinx-build -b html . _build/html
+          
+
       # the following steps are only done after pushing to main or merging a PR
       # clone and set up the old gh-pages branch
       - name: Clone old gh-pages
