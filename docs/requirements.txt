@@ -1,0 +1,3 @@
+sphinx>=4.0
+sphinxcontrib-plantuml
+sphinx-needs
