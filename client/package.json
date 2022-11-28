@@ -17,6 +17,7 @@
         "vscode-languageclient": "8.0.2"
     },
     "devDependencies": {
-        "@types/vscode": "^1.67.0"
+        "@types/vscode": "^1.67.0",
+        "@vscode/test-electron": "^2.1.2"
     }
 }

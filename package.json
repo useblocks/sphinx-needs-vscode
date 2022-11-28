@@ -1,65 +1,77 @@
 {
-    "name": "sphinx-needs-vscode",
-    "displayName": "Sphinx-Needs",
-    "description": "Awesome language support for Sphinx-Needs in VSCode",
-    "author": {
-        "name": "team useblocks"
-    },
-    "publisher": "",
-    "version": "0.1.0",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": ""
-    },
-    "engines": {
-        "vscode": "^1.67.0"
-    },
-    "categories": [],
-    "activationEvents": [
-        "onLanguage:restructuredtext"
-    ],
-    "main": "./client/out/extension",
-    "capabilities": {},
-    "contributes": {
-        "configuration": {
-            "type": "object",
-            "title": "Sphinx-Needs",
-            "properties": {
-                "sphinx-needs.trace.server": {
-                    "scope": "window",
-                    "type": "string",
-                    "enum": [
-                        "off",
-                        "messages",
-                        "verbose"
-                    ],
-                    "default": "off",
-                    "description": "Trace the communication between VSCode and Sphinx-Needs language server."
-                },
-                "sphinx-needs.needsJson": {
-                    "type": "string",
-                    "scope": "resource",
-                    "default": "",
-                    "description": "Sphinx-Needs generated Needs Json file path."
-                },
-                "sphinx-needs.srcDir": {
-                    "type": "string",
-                    "scope": "resource",
-                    "default": "",
-                    "description": "Sphinx-Needs docs source directory."
-                }
-            }
+  "name": "sphinx-needs-vscode",
+  "displayName": "Sphinx-Needs",
+  "description": "Awesome language support for Sphinx-Needs in VSCode",
+  "author": {
+    "name": "team useblocks"
+  },
+  "publisher": "useblocks",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/useblocks/sphinx-needs-vscode"
+  },
+  "engines": {
+    "vscode": "^1.67.0"
+  },
+  "categories": [],
+  "activationEvents": [
+    "onLanguage:restructuredtext"
+  ],
+  "main": "./client/out/extension",
+  "capabilities": {},
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Sphinx-Needs",
+      "properties": {
+        "sphinx-needs.trace.server": {
+          "scope": "window",
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace the communication between VSCode and Sphinx-Needs language server."
+        },
+        "sphinx-needs.needsJson": {
+          "type": "string",
+          "scope": "resource",
+          "default": "",
+          "description": "Sphinx-Needs generated Needs Json file path."
+        },
+        "sphinx-needs.srcDir": {
+          "type": "string",
+          "scope": "resource",
+          "default": "",
+          "description": "Sphinx-Needs docs source directory."
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -b",
-        "watch": "tsc -b -w",
-        "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
-    },
-    "devDependencies": {
-        "@types/node": "^16.11.7",
-        "typescript": "4.6.4"
+      }
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "test-compile": "tsc -p ./",
+    "test": "npm run test-compile && node ./client/out/test/runTest.js",
+    "watch": "tsc -b -w",
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+    "lint": "gts lint ./client/src/extension.ts ./server/src",
+    "clean": "gts clean && cd client && gts clean && cd ../server && gts clean && cd ..",
+    "fix-lint": "gts fix ./client/src/extension.ts ./server/src",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run lint"
+  },
+  "devDependencies": {
+    "@types/glob": "8.0.0",
+    "@types/mocha": "^9.1.0",
+    "@types/node": "^16.11.7",
+    "mocha": "^9.2.1",
+    "typescript": "^4.9.3",
+    "gts": "^3.1.1"
+  }
 }

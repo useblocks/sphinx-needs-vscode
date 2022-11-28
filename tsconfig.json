@@ -5,7 +5,8 @@
         "outDir": "out",
         "rootDir": "src",
         "lib": ["es2022"],
-        "sourceMap": true
+        "sourceMap": true,
+        "strict": true
     },
     "include": [
         "src"
