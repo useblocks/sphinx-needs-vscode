@@ -1,0 +1,35 @@
+name: Tests
+
+on: [push]
+
+jobs:
+  build:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+  
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npm run vscode:prepublish
+
+      - name: Run tests
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npm run test
+
+      - name: Lint check
+        run: npm run lint

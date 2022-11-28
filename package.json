@@ -61,10 +61,7 @@
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
     "lint": "gts lint ./client/src/extension.ts ./server/src",
     "clean": "gts clean && cd client && gts clean && cd ../server && gts clean && cd ..",
-    "fix-lint": "gts fix ./client/src/extension.ts ./server/src",
-    "prepare": "npm run compile",
-    "pretest": "npm run compile",
-    "posttest": "npm run lint"
+    "fix-lint": "gts fix ./client/src/extension.ts ./server/src"
   },
   "devDependencies": {
     "@types/glob": "8.0.0",
