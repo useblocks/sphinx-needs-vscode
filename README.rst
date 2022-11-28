@@ -1,50 +1,50 @@
-Sphinx-Needs-VsCode
-===================
+Sphinx-Needs for Visual Studio Code
+===================================
 
-Sphinx-Needs is a Sphinx extension to write documentation.
+`Sphinx-Needs <https://sphinx-needs.readthedocs.io/en/latest/>`_ is a `Sphinx <https://www.sphinx-doc.org>`_ extension to write documentation.
 
-This Sphinx-Needs-VSCode brings great experience for editing in VSCode When
-using Sphinx-Needs.
+This **Sphinx-Needs-VSCode extension** aims to bring enhanced experience for editing Sphinx-Needs project when using `VSCode <https://code.visualstudio.com/>`_.
 
 It provides language features like code completion, goto definition, and hover.
 
-Install
--------
+Quick Start
+-----------
 
-.. code-block:: sh
+* Install the **Sphinx-Needs-VSCode extension**.
 
-    git clone https://github.com/useblocks/Sphinx-Needs-VsCode.git
+* Config workspace settings of **needsJson** and **srcDir**, to specify needs json path and source directory of your Sphinx-Needs project.
 
-    cd Sphinx-Needs-VSCode
+  Open **.vscode/settings.json**, specify the path:
 
-    npm install
+.. image:: https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/settings.gif
+   :align: center
 
-    npm run compile
+* Open any **.rst** file will activate the extension.
 
-    code .
+Features
+--------
 
-Showcase example
-----------------
+* Code Completion
 
-Run debug: Launch Client
+.. image:: https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_code_completion_snippets.gif
+   :align: center
 
-Try it out there currently supported features: Hover, Completion,
-and Goto Definition
+* Hover
 
-TODO
-----
+.. image:: https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_hover.gif
+   :align: center
 
-Extension client side configuration
+* Goto Definition
 
-# needs.json: check path, config default if not exists, watch needs.json content
-  update
+.. image:: https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_goto.gif
+   :align: center
 
-# conf.py: location needed for goto definition, cause docname in needs.json is only
-  relative path
+* ID Selection
 
-Other
+.. image:: https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_id_selection.gif
+   :align: center
 
-# linting
-# testing
-# documentation
-# CI, Packaging, Distributing
+* ID Auto Generation
+
+.. image:: https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_id_auto_gen.gif
+   :align: center
