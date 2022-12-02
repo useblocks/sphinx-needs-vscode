@@ -1,7 +1,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "Sphinx Need Vscode"
-copyright = "2022, useblocks GmbH"
+copyright = "useblocks GmbH"
 author = "useblocks teams"
 
 # -- General configuration ---------------------------------------------------
@@ -9,7 +9,11 @@ author = "useblocks teams"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx_needs", "sphinx_immaterial"]
+extensions = [
+	"sphinx_needs",
+	"sphinx_immaterial",
+	"sphinx_design"
+]
 
 needs_types = [
 	{"directive": "req", "title": "Requirement", "prefix": "R_", "color": "#BFD8D2", "style": "node"},
@@ -54,7 +58,8 @@ html_theme_options = {
 		"navigation.top",
 		"search.share",
 		"navigation.tracking",
-		"toc.follow"
+		"toc.follow",
+		"content.tabs.link"
 	],
 	"palette": {
 		"scheme": "slate",

@@ -21,6 +21,11 @@ Needs
 
    Specification content
 
+.. spec:: Dummy Title
+   :id: 3f3b1468
+   :status: open
+
+   Content.
 
 :need:`REQ_1`
 

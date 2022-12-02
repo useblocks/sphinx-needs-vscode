@@ -165,3 +165,6 @@ table.NEEDS_DATATABLES, table.NEEDS_TABLE{
     width: inherit;
 }
 
+#install-node-npm summary::after{
+	display: none;
+}
