@@ -38,6 +38,8 @@ The extension enables you to navigate your documentation project using the *need
 Need ID Selection
 -----------------
 
+You can select the *need* ID by using the *need* type and the name of the file containing the *need* ID.
+
 .. image:: /_images/features_id_selection.gif
    :align: center
 

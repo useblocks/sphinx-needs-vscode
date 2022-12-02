@@ -24,6 +24,7 @@ needs_types = [
 	{"directive": "need", "title": "Need", "prefix": "N_", "color": "#9856a5", "style": "node"},
 ]
 
+# build needs.json to make permalinks work
 needs_build_json = True
 
 # Add any paths that contain templates here, relative to this directory.
@@ -38,8 +39,10 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
+html_logo = "./_images/sn-logo.png"
+html_favicon = "./_images/sn-favicon.png"
 html_theme = "sphinx_immaterial"
+html_title = "Sphinx Needs Vscode"
 html_theme_options = {
 	"icon": {
 		"repo": "fontawesome/brands/github",
@@ -67,7 +70,7 @@ html_theme_options = {
 		"accent": "yellow",
 	},
 	"toc_title_is_page_title": True,
-	"toc_title": "Sphinx Needs Vscode",
+	"toc_title": "Contents",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

@@ -8,10 +8,23 @@ Installation
     The **Sphinx-Needs-VSCode extension** is still under development and is not available
     on the `Visual Studio Code Marketplace <https://marketplace.visualstudio.com/vscode>`_
 
+
 Install extension from ``.VSIX`` file
 -------------------------------------
 
-- Download the :download:`Sphinx-Needs-VSCode </sphinx-needs-vscode-0.1.0.zip>` extension ``.vsix`` file.
+- Clone the source repository
+
+  .. code-block:: bash
+
+      git clone https://github.com/useblocks/sphinx-needs-vscode.git
+      cd sphinx-needs-vscode
+
+- Build the **Sphinx-Needs-VSCode** extension ``.vsix`` file locally using the command:
+
+  .. code-block:: bash
+
+      npm install vsce
+      vsce package --baseContentUrl https://github.com/useblocks/sphinx-needs-vscode --baseImagesUrl https://github.com/useblocks/sphinx-needs-vscode
 
 - Install the ``sphinx-needs-vscode-*.*.*.vsix`` file by running the following command:
 
@@ -29,7 +42,7 @@ Install extension from ``.VSIX`` file
 
 - or you can open ``.vscode/settings.json``, and specify the path:
 
-  .. image:: https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/settings.gif
+  .. image:: /_images/settings_json.png
      :align: center
 
 - Open any **.rst** file to activate the extension.

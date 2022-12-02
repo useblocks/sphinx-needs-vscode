@@ -168,3 +168,7 @@ table.NEEDS_DATATABLES, table.NEEDS_TABLE{
 #install-node-npm summary::after{
 	display: none;
 }
+
+.md-header__button.md-logo :is(img, png) {
+    height: 2.2rem !important;
+}
