@@ -17,7 +17,8 @@
   },
   "categories": [],
   "activationEvents": [
-    "onLanguage:restructuredtext"
+    "onLanguage:restructuredtext",
+    "onLanguage:python"
   ],
   "main": "./dist/extension.js",
   "capabilities": {},
@@ -54,7 +55,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "npm run bundle",
+    "compile": "tsc -b && npm run bundle",
     "test-compile": "tsc -p ./",
     "bundle": "esbuild client/src/extension.ts --bundle --outdir=dist --external:vscode --format=cjs --platform=node",
     "bundle-dev": "npm run bundle -- --sourcemap",

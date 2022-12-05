@@ -27,8 +27,11 @@ export function activate(context: ExtensionContext) {
 
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
-		// Register the server for rst documents
-		documentSelector: [{ scheme: 'file', language: 'restructuredtext' }],
+		// Register the server for rst and .py documents
+		documentSelector: [
+			{ scheme: 'file', language: 'restructuredtext' },
+			{ scheme: 'file', language: 'python' }
+		],
 		synchronize: {
 			// Notify the server about file changes to .json files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/*.json')
