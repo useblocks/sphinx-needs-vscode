@@ -10,7 +10,6 @@ out/
 
 client/node_modules/
 client/out/
-!client/out/test/
 client/src/
 client/testData/
 server/src/
