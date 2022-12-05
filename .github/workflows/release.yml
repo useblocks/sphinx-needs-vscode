@@ -1,0 +1,97 @@
+# https://github.com/golang/vscode-go/blob/master/.github/workflows/release.yml
+
+# Create Release in Github release page:
+  # create Pre-Release when tag pushed in format: 'vX.X.X-rc.X'
+  # create Official-Release when tag pushed in format: 'vX.X.X'
+# Upload .vsix file as asset of the release
+# Publish Official-Release to Visual Studio Code Marketplace
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    if: github.repository == "useblocks/sphinx-needs-vscode"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Check and get release version
+        run: |
+          TAGGED_VERSION="${GITHUB_REF/refs\/tags\/v/}"
+
+          if [[ ! "${TAGGED_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "Invalid version tag '${TAGGED_VERSION}'"
+            exit 1
+          fi
+
+          echo "EXT_VERSION=${TAGGED_VERSION}" >> $GITHUB_ENV
+          
+          WRITTEN_VERSION="$(cat package.json | jq '.version' -r)"
+
+          if [[ "${TAGGED_VERSION}" == *"-"* ]]; then
+            if [[ ! "${TAGGED_VERSION}" == "${WRITTEN_VERSION}"-rc.* ]]; then
+              echo "Prerelease Tag and Version in package.json are not compatible: '${TAGGED_VERSION}' vs '${WRITTEN_VERSION}'"
+              exit 1
+            fi
+            echo "EXT_ISPRERELEASE=1" >> $GITHUB_ENV
+          else
+            if [[ "${TAGGED_VERSION}" != "${WRITTEN_VERSION}" ]]; then
+              echo "Release Tag and Version written in package.json do not match: '${TAGGED_VERSION}' vs '${WRITTEN_VERSION}'"
+              exit 1
+            fi
+            echo "EXT_ISPRERELEASE=0" >> $GITHUB_ENV
+          fi
+
+      - name: Stamp version
+        run: |
+          cat package.json | jq --arg VER "${{ env.EXT_VERSION }}" '.version=$VER' > /tmp/package.json 
+          cp /tmp/package.json ./package.json
+          npm ci
+          npm run vscode:prepublish
+
+      - name: Package
+        uses: lannonbr/vsce-action@3.0.0
+        with:
+          args: "package"
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ env.EXT_VERSION }}
+          draft: false
+          prerelease: ${{env.EXT_ISPRERELEASE == 1}}
+
+      - name: Upload release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./sphinx-needs-vscode-${{ env.EXT_VERSION }}.vsix
+          asset_name: sphinx-needs-vscode-${{ env.EXT_VERSION }}.vsix
+          asset_content_type: application/zip
+
+      - name: Publish to VSCode Marketplace
+        if: env.EXT_ISPRERELEASE != 1 && github.repository == "useblocks/sphinx-needs-vscode"
+        uses: lannonbr/vsce-action@3.0.0
+        with:
+          args: "publish -p $VSCE_TOKEN"
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
