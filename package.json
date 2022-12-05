@@ -17,7 +17,8 @@
   },
   "categories": [],
   "activationEvents": [
-    "onLanguage:restructuredtext"
+    "onLanguage:restructuredtext",
+    "onLanguage:python"
   ],
   "main": "./dist/extension.js",
   "capabilities": {},
