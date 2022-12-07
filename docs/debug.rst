@@ -20,8 +20,9 @@ Check if the above packages are installed.
 
 You can check :ref:`How to install NodeJS and NPM <install_node_npm>` from this dropdown.
 
-.. dropdown:: How to install NodeJS and NPM
-   :animate: fade-in-slide-down
+.. note:: 
+   :title: How to install NodeJS and NPM
+   :collapsible: 
    :name: install_node_npm
 
    **Install NodeJS**

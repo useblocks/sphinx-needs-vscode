@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Recursive:wght@300;400&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Recursive:wght@300;400&display=swap'); */
 
 :root > * {
   --md-primary-fg-color: #FFCC00;
@@ -165,10 +165,7 @@ table.NEEDS_DATATABLES, table.NEEDS_TABLE{
     width: inherit;
 }
 
-#install-node-npm summary::after{
-	display: none;
-}
-
 .md-header__button.md-logo :is(img, png) {
     height: 2.2rem !important;
 }
+

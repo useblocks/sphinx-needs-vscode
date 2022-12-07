@@ -12,7 +12,6 @@ author = "useblocks teams"
 extensions = [
 	"sphinx_needs",
 	"sphinx_immaterial",
-	"sphinx_design"
 ]
 
 needs_types = [
@@ -48,7 +47,8 @@ html_theme_options = {
 		"repo": "fontawesome/brands/github",
 	},
 	"font": {
-		"code": "JetBrains Mono"
+		"code": "JetBrains Mono",
+		"text": "Recursive"
 	},
 	"site_url": "https://sphinx-needs-vscode.useblocks.com/",
 	"repo_url": "https://github.com/useblocks/sphinx-needs-vscode",
@@ -72,6 +72,8 @@ html_theme_options = {
 	"toc_title_is_page_title": True,
 	"toc_title": "Contents",
 }
+
+sphinx_immaterial_external_resource_cache_dir =  "./.cache/external_resources"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
