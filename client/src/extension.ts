@@ -8,6 +8,8 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } f
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
+	console.log('Activated Sphinx-Needs-VsCode Extension.');
+
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(path.join('server', 'out', 'server.js'));
 	// The debug options for the server

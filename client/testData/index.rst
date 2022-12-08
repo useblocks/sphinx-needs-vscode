@@ -37,6 +37,8 @@ REQ_2
 
 :need:`->req>index.rst>`
 
+:need:`->req>mySubFolder/`
+
 .. toctree::
    :maxdepth: 2
 
