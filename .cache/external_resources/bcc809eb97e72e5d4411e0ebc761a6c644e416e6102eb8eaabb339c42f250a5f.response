@@ -1,0 +1,6 @@
+@font-face {
+  font-family: 'Urbanist';
+  font-style: italic;
+  font-weight: 700;
+  src: url(https://fonts.gstatic.com/s/urbanist/v10/L0xtDF02iFML4hGCyMqgdyNEf6or5L2WA10QUqmoY8WXLpS0aIY.ttf) format('truetype');
+}

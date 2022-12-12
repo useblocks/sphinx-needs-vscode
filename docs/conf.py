@@ -48,7 +48,7 @@ html_theme_options = {
 	},
 	"font": {
 		"code": "JetBrains Mono",
-		"text": "Recursive"
+		"text": "Urbanist"
 	},
 	"site_url": "https://sphinx-needs-vscode.useblocks.com/",
 	"repo_url": "https://github.com/useblocks/sphinx-needs-vscode",

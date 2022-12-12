@@ -64,20 +64,18 @@ tbody tr td {
 
 body,
 input {
-    font-family: 'Recursive', sans-serif !important;
-    font-size: 16px !important;
+    font-size: 18px !important;
     font-weight: 400;
     line-height: 1.5 !important;
 }
 
 .md-typeset, .md-nav, .md-typeset table:not([class]) {
-    font-size: 16px !important;
+    font-size: 18px !important;
     line-height: 1.5 !important;
 }
 
 
 h1, h2, h3 {
-    font-family: 'Recursive', sans-serif !important;
     font-weight: 500 !important;
     line-height: 1.4 !important;
 }
@@ -88,12 +86,12 @@ h1:not([class="md-search-result__title"]) {
 }
 
 h2 {
-    font-size: 24px !important;
+    font-size: 28px !important;
     margin-bottom: 10px !important;
 }
 
 h3 {
-    font-size: 18px !important;
+    font-size: 24px !important;
     margin-bottom: 10px !important;
 }
 
