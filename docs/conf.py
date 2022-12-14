@@ -1,3 +1,5 @@
+import os
+
 # -- Project information -----------------------------------------------------
 
 project = "Sphinx Need Vscode"
@@ -73,7 +75,7 @@ html_theme_options = {
 	"toc_title": "Contents",
 }
 
-sphinx_immaterial_external_resource_cache_dir =  "./.cache/external_resources"
+sphinx_immaterial_external_resource_cache_dir =  os.path.abspath("./.cache/external_resources")
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
