@@ -17,6 +17,7 @@ server/src/
 docs/
 .venv/
 
+Makefile
 .editorconfig
 .eslintignore
 .eslintrc.json
