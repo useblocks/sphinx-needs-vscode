@@ -17,7 +17,7 @@ jobs:
   release:
     name: Create release
     runs-on: ubuntu-latest
-    if: github.repository == "useblocks/sphinx-needs-vscode"
+    if: github.repository == 'useblocks/sphinx-needs-vscode'
 
     steps:
       - name: Checkout code
@@ -89,7 +89,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Publish to VSCode Marketplace
-        if: env.EXT_ISPRERELEASE != 1 && github.repository == "useblocks/sphinx-needs-vscode"
+        if: env.EXT_ISPRERELEASE != 1 && github.repository == 'useblocks/sphinx-needs-vscode'
         uses: lannonbr/vsce-action@3.0.0
         with:
           args: "publish -p $VSCE_TOKEN"
