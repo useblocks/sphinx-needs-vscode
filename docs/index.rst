@@ -13,4 +13,5 @@ providing Needs information on mouse hover, and more.
    features
    settings
    debug
+   contributing
    changelog
