@@ -47,3 +47,13 @@ Lint
 ~~~~
 
 Run ``npm run lint`` or ``make lint`` to check lint errors in your code.
+
+
+Release
+~~~~~~~
+
+To create a Pre-Release version of extension, you need to create and push a tag in the name pattern: ``vX.X.X-rc.X``, e.g. ``v0.1.0-rc.1``,
+it will create and upload assets to Github releases continaing `.vsix` file, which you can download, install and test locally in your VS Code.
+
+To create Official-Release of this extension, you need to create and push a tag in the name pattern: ``vX.X.X``, e.g. ``v0.1.0``, it will
+then be published to VS Code Marketplace.
