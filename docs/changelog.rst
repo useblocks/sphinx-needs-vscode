@@ -6,6 +6,11 @@ Changelog
 
 Under development
 
+0.1.1
+-----
+
+Released: 21.12.2022
+
 * Fixed Goto definition not working for multiple need ID same line issue
 * Added icon for extension
 
