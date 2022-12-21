@@ -6,6 +6,8 @@ Changelog
 
 Under development
 
+* Fixed Goto definition not working for multiple need ID same line issue
+
 0.1.0
 -----
 

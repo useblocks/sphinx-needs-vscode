@@ -77,11 +77,11 @@ suite('Sphinx-Needs Extension Tests', function () {
 
 		const testCases: [string, vscode.Position, vscode.CompletionList][] = [
 			['trigger ..', new vscode.Position(10, 2), expectedSnippets],
-			['trigger :', new vscode.Position(29, 1), expectedNeedRoleOrOption],
-			['trigger > at lev1', new vscode.Position(33, 9), expectedNeedPathLev1],
-			['trigger > at lev2', new vscode.Position(35, 13), expectedNeedPathLev2],
-			['trigger > at lev3', new vscode.Position(37, 23), expectedNeedPathLev3],
-			['trigger /', new vscode.Position(39, 25), expectedPathFolderInsider]
+			['trigger :', new vscode.Position(30, 1), expectedNeedRoleOrOption],
+			['trigger > at lev1', new vscode.Position(34, 9), expectedNeedPathLev1],
+			['trigger > at lev2', new vscode.Position(36, 13), expectedNeedPathLev2],
+			['trigger > at lev3', new vscode.Position(38, 23), expectedNeedPathLev3],
+			['trigger /', new vscode.Position(40, 25), expectedPathFolderInsider]
 		];
 
 		const promises = testCases.map(async ([name, position, expectedItems]) => {
@@ -185,12 +185,25 @@ suite('Sphinx-Needs Extension Tests', function () {
 		await activate(docUri);
 
 		const testCases: [string, vscode.Position, string, vscode.Position][] = [
-			['goto same file', new vscode.Position(18, 12), docUri.path, new vscode.Position(17, 0)],
+			['goto same file', new vscode.Position(19, 12), docUri.path, new vscode.Position(18, 0)],
 			[
 				'goto different file',
-				new vscode.Position(31, 1),
+				new vscode.Position(32, 1),
 				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
 				new vscode.Position(3, 0)
+			],
+			['goto multiple ID same line', new vscode.Position(32, 10), docUri.path, new vscode.Position(18, 0)],
+			[
+				'goto option with multiple ID first',
+				new vscode.Position(13, 15),
+				docUri.path,
+				new vscode.Position(18, 0)
+			],
+			[
+				'goto option with multiple ID last',
+				new vscode.Position(13, 22),
+				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				new vscode.Position(9, 0)
 			],
 			['negative goto', new vscode.Position(6, 3), '', new vscode.Position(0, 0)]
 		];

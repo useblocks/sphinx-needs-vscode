@@ -11,6 +11,7 @@ Needs
 .. req:: First requirement
    :id: REQ_1
    :status: open
+   :links: SPEC_1, REQ_3
 
    Requirement content
 
@@ -29,7 +30,7 @@ Needs
 
 :need:`REQ_1`
 
-REQ_2
+REQ_2, SPEC_1
 
 :need:`->`
 
