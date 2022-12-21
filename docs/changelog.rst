@@ -6,6 +6,8 @@ Changelog
 
 Under development
 
+* Updated homepage for extension
+
 0.1.1
 -----
 

@@ -13,6 +13,7 @@
     "type": "git",
     "url": "https://github.com/useblocks/sphinx-needs-vscode"
   },
+  "homepage": "https://sphinx-needs-vscode.useblocks.com/",
   "engines": {
     "vscode": "^1.67.0"
   },
