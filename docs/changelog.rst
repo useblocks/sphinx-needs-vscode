@@ -7,6 +7,7 @@ Changelog
 Under development
 
 * Fixed Goto definition not working for multiple need ID same line issue
+* Added icon for extension
 
 0.1.0
 -----

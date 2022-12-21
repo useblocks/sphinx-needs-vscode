@@ -8,6 +8,7 @@
   "publisher": "useblocks",
   "version": "0.1.0",
   "license": "MIT",
+  "icon": "utils/sn-favicon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/useblocks/sphinx-needs-vscode"
