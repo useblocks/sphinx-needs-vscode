@@ -6,3 +6,9 @@ SubFolder Document
    :status: open
 
    Requirement content.
+
+.. req:: Third requirement
+   :id: REQ_3
+   :status: open
+
+   Requirement content.

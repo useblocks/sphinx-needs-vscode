@@ -31,6 +31,14 @@
                     "description": "Description for REQ_2.",
                     "docname": "mySubFolder/sub",
                     "doctype": ".rst"
+                },
+                "REQ_3": {
+                    "id": "REQ_3",
+                    "title": "example third req",
+                    "type": "req",
+                    "description": "Description for REQ_3.",
+                    "docname": "mySubFolder/sub",
+                    "doctype": ".rst"
                 }
             }
         }

@@ -304,8 +304,8 @@ function get_word(params: TextDocumentPositionParams): string {
 	}
 	const text = document.getText(curr_line).replace(/[\n\r]/g, '');
 
-	// Breaks line content into words by space
-	const words = text.split(' ');
+	// Breaks line content into words by space or comma
+	const words = text.split(/[ ,]+/);
 
 	// Get current word based on current cursor character position, e.g. ['random', 'text', 'some', 'where']
 	let index = 0;
@@ -652,9 +652,10 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
 			connection.console.log(`No defintion found of ${need_id}.`);
 			return null;
 		}
-		const found_directive_line_idx = new_doc_content_lines.findIndex(
-			(line) => line.indexOf(directive_pattern) !== -1
-		);
+		const found_reverse_directive_line_idx = new_doc_content_lines
+			.reverse()
+			.findIndex((line) => line.indexOf(directive_pattern) !== -1);
+		const found_directive_line_idx = new_doc_content_lines.length - 1 - found_reverse_directive_line_idx;
 		return {
 			uri: doc_path,
 			range: {
