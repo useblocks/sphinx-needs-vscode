@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 // import * as myExtension from '../extension';
 
-suite('Sphinx-Needs Extension Tests', function () {
+suite('Sphinx-Needs Extension Tests for rst file', function () {
 	this.timeout(30000);
 
 	test('Sample test', () => {
@@ -225,6 +225,45 @@ suite('Sphinx-Needs Extension Tests', function () {
 				assert.equal(definition.range.end.character, expectedPos.character);
 			} else {
 				assert.equal(definition, null);
+			}
+		});
+		return Promise.all(promises);
+	});
+});
+
+suite('Sphinx-Needs Extension Tests for plaintext file', function() {
+	this.timeout(30000);
+
+	// Test Document
+	const doc_path = path.resolve(__dirname, '../../testData', 'test.txt');
+	const docUri = vscode.Uri.file(doc_path);
+
+	// Test hover
+	test('Test hover', async () => {
+		// Activate extension
+		await activate(docUri);
+
+		// Create test cases with expected results
+		const testCases: [string, vscode.Position, string][] = [
+			['inside needID', new vscode.Position(3, 2), 'Description for REQ_3'],
+			['inside non needID', new vscode.Position(11, 3), '']
+		];
+
+		const promises = testCases.map(async ([name, position, expectedMsg]) => {
+			const hovers = (await vscode.commands.executeCommand(
+				'vscode.executeHoverProvider',
+				docUri,
+				position
+			)) as vscode.Hover[];
+
+			const hover = hovers[0];
+			if (expectedMsg) {
+				assert.equal(hover.contents.length, 1);
+				const displayText = (<vscode.MarkdownString>hover.contents[0]).value;
+				assert.ok(displayText.includes(expectedMsg), `Hover over ${name} failed.`);
+			} else {
+				// negative tests
+				assert.equal(hover, null);
 			}
 		});
 		return Promise.all(promises);

@@ -11,7 +11,7 @@ hover.
 
 ## Quick Start
 
-- Install the **Sphinx-Needs-VSCode extension**.
+- Install the [Sphinx-Needs-VSCode extension](https://marketplace.visualstudio.com/items?itemName=useblocks.sphinx-needs-vscode).
 
 - Config workspace settings of **needsJson** and **srcDir**, to specify the needs JSON path and source directory of your Sphinx-Needs project.
 
