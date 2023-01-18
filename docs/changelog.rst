@@ -9,6 +9,7 @@ Under development
 * Updated homepage for extension
 * Adapted extension activationEvents to workspace contains ``conf.py``.
 * Added setting :ref:`activateFiles` to config supported files that language features will be activated when file opened.
+* Added feature :ref:`find_references`.
 
 0.1.1
 -----

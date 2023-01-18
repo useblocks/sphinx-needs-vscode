@@ -38,6 +38,17 @@ needs_types = [
     {"directive": "need", "title": "Need", "prefix": "N_", "color": "#9856a5", "style": "node"},
 ]
 
+needs_extra_links = [
+    {
+        "option": "tests",
+        "incoming": "is tested by",
+        "outgoing": "tests",
+        "copy": True,
+        "style": "#00AA00",
+        "style_part": "dotted,#00AA00",
+    }
+]
+
 needs_build_json = True
 
 # Add any paths that contain templates here, relative to this directory.

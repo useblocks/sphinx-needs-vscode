@@ -33,6 +33,16 @@ The extension enables you to navigate your documentation project using the *need
 .. image:: /_images/features_goto.gif
    :align: center
 
+.. _find_references:
+
+Find References
+---------------
+
+Find all other *need* objects that link to current *need ID*.
+
+.. image:: /_images/features_find_references.gif
+   :align: center
+
 .. _id_select:
 
 Need ID Selection
