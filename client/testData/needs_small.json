@@ -14,7 +14,10 @@
                     "type": "req",
                     "description": "Description for REQ_1.",
                     "docname": "index",
-                    "doctype": ".rst"
+                    "doctype": ".rst",
+                    "links": ["SPEC_1", "REQ_3", "REQ_2"],
+                    "tests": ["REQ_2"],
+                    "tests_back": []
                 },
                 "SPEC_1": {
                     "id": "SPEC_1",
@@ -22,7 +25,10 @@
                     "type": "spec",
                     "description": "Description for SPEC_1.",
                     "docname": "index",
-                    "doctype": ".rst"
+                    "doctype": ".rst",
+                    "links": ["REQ_3"],
+                    "tests": ["REQ_2"],
+                    "tests_back": []
                 },
                 "REQ_2": {
                     "id": "REQ_2",
@@ -30,7 +36,10 @@
                     "type": "req",
                     "description": "Description for REQ_2.",
                     "docname": "mySubFolder/sub",
-                    "doctype": ".rst"
+                    "doctype": ".rst",
+                    "links": [],
+                    "tests": [],
+                    "tests_back": ["REQ_1", "SPEC_1"]
                 },
                 "REQ_3": {
                     "id": "REQ_3",
@@ -38,7 +47,10 @@
                     "type": "req",
                     "description": "Description for REQ_3.",
                     "docname": "mySubFolder/sub",
-                    "doctype": ".rst"
+                    "doctype": ".rst",
+                    "links": [],
+                    "tests": [],
+                    "tests_back": []
                 }
             }
         }

@@ -35,6 +35,10 @@ hover.
 
 ![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_goto.gif)
 
+**Find References:**
+
+![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_find_references.gif)
+
 **ID Selection:**
 
 ![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_id_selection.gif)

@@ -1,5 +1,7 @@
 'use strict';
 
+import fs = require('fs');
+
 import {
 	createConnection,
 	TextDocuments,
@@ -12,6 +14,7 @@ import {
 	Hover,
 	MarkupKind,
 	Definition,
+	Location,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult,
@@ -63,6 +66,8 @@ interface Need {
 	title: string;
 	id: string;
 	type: string;
+	links: string[];
+	bkLinks: string[];
 }
 
 interface NeedsTypesDocsInfo {
@@ -101,7 +106,9 @@ connection.onInitialize((params: InitializeParams) => {
 			// Supports hover
 			hoverProvider: true,
 			// Supports goto definition
-			definitionProvider: true
+			definitionProvider: true,
+			// Supports find references
+			referencesProvider: true
 		}
 	};
 
@@ -214,9 +221,6 @@ connection.onDidChangeWatchedFiles((_change) => {
 });
 
 function read_needs_json(given_needs_json_path: string) {
-	// Read json file
-	const fs = require('fs');
-
 	// Check if given needs.json path exists
 	const needs_json_path = given_needs_json_path;
 
@@ -273,6 +277,9 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 
 	// Get need types, docs_per_type, and needs_per_doc
 	Object.values(needs).forEach((need) => {
+		// initial new entry bkLinks for each need object
+		need.bkLinks = [];
+
 		if (!(need['type'] in needs_types_docs_info.docs_per_type)) {
 			needs_types_docs_info.needs_types.push(need['type']);
 			needs_types_docs_info.docs_per_type[need['type']] = [];
@@ -287,6 +294,29 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 		}
 		needs_types_docs_info.needs_per_doc[need_doc_name].push(need);
 	});
+
+	// Calculate back links for each need object
+	for (const [need_id, value] of Object.entries(needs)) {
+		// Get back links for needs_extra_links
+		for (const [need_option, op_value] of Object.entries(value)) {
+			if (need_option.endsWith('_back') && op_value && Array.isArray(op_value)) {
+				op_value.forEach((id: string) => {
+					// Validates linked need ID
+					if (Object.keys(needs).indexOf(id) !== -1) {
+						value.bkLinks.push(id);
+					}
+				});
+			}
+		}
+		// Get and calculate back links for normal need links option
+		if (value.links) {
+			value.links.forEach((bk_need) => {
+				if (bk_need in needs && needs[bk_need].bkLinks.indexOf(need_id) === -1) {
+					needs[bk_need].bkLinks.push(need_id);
+				}
+			});
+		}
+	}
 
 	return needs_types_docs_info;
 }
@@ -584,6 +614,20 @@ connection.onHover((_textDocumentPosition: TextDocumentPositionParams): Hover | 
 	};
 });
 
+function found_docs_srcdir(): boolean {
+	if (!doc_src_dir) {
+		connection.console.log('srcDir setting not configured.');
+		return false;
+	} else if (!fs.existsSync(doc_src_dir)) {
+		// Check if given srcDir exists
+		connection.console.log(`srcDir path not exists: ${doc_src_dir}`);
+		connection.window.showWarningMessage(`srcDir path not exists: ${doc_src_dir}`);
+		return false;
+	} else {
+		return true;
+	}
+}
+
 // Goto definition for Sphinx-Needs
 connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Definition | null => {
 	// Return location of definition of a need
@@ -592,18 +636,13 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
 		return null;
 	}
 
-	const fs = require('fs');
-	if (!doc_src_dir) {
-		connection.console.log('No srcDir. No Goto Definition feature.');
-		return null;
-	} else if (!fs.existsSync(doc_src_dir)) {
-		// Check if given srcDir exists
-		connection.console.log(`srcDir path: ${doc_src_dir} not exists. No Goto Definition feature.`);
-		connection.window.showWarningMessage(`srcDir path: ${doc_src_dir} not exists. No Goto Definition feature.`);
+	// Check if srcDir configured and exists
+	if (found_docs_srcdir()) {
+		connection.console.log('Goto Definition...');
+	} else {
+		connection.console.log('srcDir not configured or path not exists. No Goto Definition');
 		return null;
 	}
-
-	connection.console.log('Goto Definition...');
 
 	// Check current context is actually a need
 	const need_id = get_word(_textDocumentPosition);
@@ -613,6 +652,140 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
 
 	// Get the doc path of the need
 	const curr_need: Need = needs_info.needs[need_id];
+	const doc_path = get_doc_path(curr_need);
+	// Read the document contents
+	const doc_contents = read_doc_content(doc_path);
+	if (!doc_contents) {
+		return null;
+	}
+	// Get need directive definition line index
+	const need_directive_location = find_directive_location(doc_contents, curr_need);
+	if (!need_directive_location) {
+		return null;
+	}
+
+	return {
+		uri: doc_path,
+		range: {
+			start: { line: need_directive_location, character: 0 },
+			end: { line: need_directive_location, character: 0 }
+		}
+	};
+});
+
+// Find references for Sphinx-Needs
+connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Location[] | null => {
+	if (!needs_info) {
+		connection.console.log('No needs info extracted from needs json. No Find references feature.');
+		return null;
+	}
+
+	// Check if srcDir configured and exists
+	if (found_docs_srcdir()) {
+		connection.console.log('Find References...');
+	} else {
+		connection.console.log('srcDir not configured or path not exists. No Find References');
+		return null;
+	}
+
+	// Check current context is actually a need
+	const need_id = get_word(_textDocumentPosition);
+	if (!need_id || !(need_id in needs_info.needs)) {
+		return null;
+	}
+
+	// Get the doc path of the need
+	const curr_need: Need = needs_info.needs[need_id];
+
+	const locations: Location[] = [];
+	if (curr_need.bkLinks) {
+		curr_need.bkLinks.forEach((link_id) => {
+			if (needs_info) {
+				const link_need: Need = needs_info.needs[link_id];
+				const doc_path = get_doc_path(link_need);
+				// Read the document contents
+				const doc_contents = read_doc_content(doc_path);
+				if (!doc_contents) {
+					return null;
+				}
+				// Get need directive definition line index
+				const need_directive_location = find_directive_location(doc_contents, link_need);
+				if (!need_directive_location) {
+					return null;
+				}
+				// // Find starting index of need ID
+				// const startPosID = doc_contents[need_directive_location + 1].indexOf(link_id);
+				// const endPosID = startPosID + link_id.length
+
+				// Find options link ID line index
+				const link_id_pattern = new RegExp(':[a-z]+: ' + '(\\w+, )*' + `${need_id}` + '(, \\w+)*', 'g');
+				const options_lines_contents = doc_contents.slice(need_directive_location);
+				// const new_found_link_id_line_idx = options_lines_contents.findIndex((line) => line.indexOf(need_id) !== -1);
+				const new_found_link_id_line_idx = options_lines_contents.findIndex((line) =>
+					line.match(link_id_pattern)
+				);
+				if (new_found_link_id_line_idx === -1) {
+					connection.console.log(`No such need ID ${need_id} in link options found under need ${link_id}`);
+					return null;
+				}
+				const found_link_id_line_idx = new_found_link_id_line_idx + need_directive_location;
+				// Find start and end position of linked ID
+				const startPosID = doc_contents[found_link_id_line_idx].indexOf(need_id);
+				const endPosID = startPosID + need_id.length;
+
+				// Get Location of linked need ID inside this directive definition
+				const location: Location = {
+					uri: doc_path,
+					range: {
+						start: { line: found_link_id_line_idx, character: startPosID },
+						end: { line: found_link_id_line_idx, character: endPosID }
+					}
+				};
+
+				if (location) {
+					locations.push(location);
+				}
+			}
+		});
+	}
+	return locations;
+});
+
+function find_directive_location(doc_content_lines: string[], curr_need: Need): number | null {
+	// Get line of need id definition with pattern {:id: need_id}
+	const id_pattern = `:id: ${curr_need.id}`;
+	// Check if id_pattern exists in target document
+	if (
+		doc_content_lines.every((line) => {
+			line.indexOf(id_pattern) !== -1;
+		})
+	) {
+		connection.console.log(`No defintion found of ${curr_need.id}.`);
+		return null;
+	}
+	const found_id_line_idx = doc_content_lines.findIndex((line) => line.indexOf(id_pattern) !== -1);
+
+	// Get line of directive with pattern {.. {need_type}::}
+	const directive_pattern = `.. ${curr_need.type}::`;
+	// Get lines before id_line_idx to find the line of directive
+	const new_doc_content_lines = doc_content_lines.slice(0, found_id_line_idx);
+	// Check if direcrive_pattern exists in target document
+	if (
+		new_doc_content_lines.every((line) => {
+			line.indexOf(directive_pattern) !== -1;
+		})
+	) {
+		connection.console.log(`No defintion found of ${curr_need.id}.`);
+		return null;
+	}
+	const found_reverse_directive_line_idx = new_doc_content_lines
+		.reverse()
+		.findIndex((line) => line.indexOf(directive_pattern) !== -1);
+	const found_directive_line_idx = new_doc_content_lines.length - 1 - found_reverse_directive_line_idx;
+	return found_directive_line_idx;
+}
+
+function get_doc_path(curr_need: Need): string {
 	let conf_py_path: string;
 	if (doc_src_dir.endsWith('/')) {
 		conf_py_path = doc_src_dir;
@@ -620,55 +793,19 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
 		conf_py_path = doc_src_dir + '/';
 	}
 	const doc_path = conf_py_path + curr_need.docname + curr_need.doctype;
+	return doc_path;
+}
 
-	//const fs = require('fs');
+function read_doc_content(doc_path: string): string[] | null {
 	try {
 		const doc_content: string = fs.readFileSync(doc_path, 'utf8');
 		const doc_content_lines = doc_content.split('\n');
-
-		// Get line of need id definition with pattern {:id: need_id}
-		const id_pattern = `:id: ${need_id}`;
-		// Check if id_pattern exists in goto document
-		if (
-			doc_content_lines.every((line) => {
-				line.indexOf(id_pattern) !== -1;
-			})
-		) {
-			connection.console.log(`No defintion found of ${need_id}.`);
-			return null;
-		}
-		const found_id_line_idx = doc_content_lines.findIndex((line) => line.indexOf(id_pattern) !== -1);
-
-		// Get line of directive with pattern {.. {need_type}::}
-		const directive_pattern = `.. ${curr_need.type}::`;
-		// Get lines before id_line_idx to find the line of directive
-		const new_doc_content_lines = doc_content_lines.slice(0, found_id_line_idx);
-		// Check if direcrive_pattern exists in goto document
-		if (
-			new_doc_content_lines.every((line) => {
-				line.indexOf(directive_pattern) !== -1;
-			})
-		) {
-			connection.console.log(`No defintion found of ${need_id}.`);
-			return null;
-		}
-		const found_reverse_directive_line_idx = new_doc_content_lines
-			.reverse()
-			.findIndex((line) => line.indexOf(directive_pattern) !== -1);
-		const found_directive_line_idx = new_doc_content_lines.length - 1 - found_reverse_directive_line_idx;
-		return {
-			uri: doc_path,
-			range: {
-				start: { line: found_directive_line_idx, character: 0 },
-				end: { line: found_directive_line_idx, character: 0 }
-			}
-		};
+		return doc_content_lines;
 	} catch (err) {
-		connection.console.log(`Error onDefintion: ${err}`);
+		connection.console.log(`Error read docoment: ${err}`);
 	}
-
 	return null;
-});
+}
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

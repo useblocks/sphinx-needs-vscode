@@ -11,7 +11,8 @@ Needs
 .. req:: First requirement
    :id: REQ_1
    :status: open
-   :links: SPEC_1, REQ_3
+   :links: SPEC_1, REQ_3, REQ_2
+   :tests: REQ_2
 
    Requirement content
 
@@ -19,11 +20,13 @@ Needs
 .. spec:: First specification
    :id: SPEC_1
    :status: open
+   :links: REQ_3
+   :tests: REQ_2
 
    Specification content
 
 .. spec:: Dummy Title
-   :id: 3f3b1468
+   :id: SPEC_3
    :status: open
 
    Content.
