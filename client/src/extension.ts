@@ -1,9 +1,15 @@
 'use strict';
 
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import { workspace, ExtensionContext, languages } from 'vscode';
 
-import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node';
+import {
+	LanguageClient,
+	LanguageClientOptions,
+	ServerOptions,
+	TextDocumentFilter,
+	TransportKind
+} from 'vscode-languageclient/node';
 
 let client: LanguageClient;
 
@@ -27,13 +33,34 @@ export function activate(context: ExtensionContext) {
 		}
 	};
 
+	// Get supported files for this extension when activated from configuration settings
+	let supported_files: string[] | undefined = workspace.getConfiguration('sphinx-needs').get('activateFiles');
+
+	const document_filters: TextDocumentFilter[] = [];
+	if (supported_files) {
+		// Filter duplicate items
+		supported_files = supported_files.filter((item, index, arr) => {
+			return arr.indexOf(item) === index;
+		});
+		// Get document filters for language client options
+		supported_files.forEach((element) => {
+			// Check if user input settings of activateFiles are supported by VsCode
+			languages.getLanguages().then((value) => {
+				if (value.indexOf(element) !== -1) {
+					document_filters.push({
+						scheme: 'file',
+						language: element
+					});
+				} else {
+					console.warn(`Given language settings of activatedFiles not supported by VsCode: ${element}`);
+				}
+			});
+		});
+	}
+
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
-		// Register the server for rst and .py documents
-		documentSelector: [
-			{ scheme: 'file', language: 'restructuredtext' },
-			{ scheme: 'file', language: 'python' }
-		],
+		documentSelector: document_filters,
 		synchronize: {
 			// Notify the server about file changes to .json files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/*.json')

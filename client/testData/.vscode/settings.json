@@ -1,4 +1,9 @@
 {
     "sphinx-needs.needsJson": "${workspaceFolder}/needs_small.json",
     "sphinx-needs.srcDir": "${workspaceFolder}",
+    "sphinx-needs.activateFiles": [
+        "restructuredtext",
+        "python",
+        "plaintext"
+    ]
 }

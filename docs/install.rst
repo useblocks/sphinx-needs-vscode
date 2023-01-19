@@ -3,11 +3,15 @@
 Installation
 ============
 
-.. note:: 
-  
-    The **Sphinx-Needs-VSCode extension** is still under development and is not available
-    on the `Visual Studio Code Marketplace <https://marketplace.visualstudio.com/vscode>`_
+Install extension from VsCode Marketplace
+-----------------------------------------
 
+Install extension `Sphinx-Needs <https://marketplace.visualstudio.com/items?itemName=useblocks.sphinx-needs-vscode>`_ from VsCode Marketplace.
+
+- Open VsCode
+- Open view of Extension (Ctrl+Shift+X)
+- Search Extension ``Sphinx-Needs``, check if publisher identifier matches: ``useblocks.sphinx-needs-vscode``
+- Install
 
 Install extension from ``.VSIX`` file
 -------------------------------------

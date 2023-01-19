@@ -19,8 +19,9 @@
   },
   "categories": [],
   "activationEvents": [
-    "onLanguage:restructuredtext",
-    "onLanguage:python"
+    "workspaceContains:conf.py",
+    "workspaceContains:*/conf.py",
+    "workspaceContains:*/*/conf.py"
   ],
   "main": "./dist/extension.js",
   "capabilities": {},
@@ -51,6 +52,15 @@
           "scope": "resource",
           "default": "",
           "description": "Sphinx-Needs docs source directory."
+        },
+        "sphinx-needs.activateFiles": {
+          "type": "array",
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "default": ["restructuredtext", "python"],
+          "description": "Activate Sphinx-Needs language support for opend file that resolves to chosen language."
         }
       }
     }

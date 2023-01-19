@@ -23,6 +23,32 @@ or manually by `build needs <https://sphinx-needs.readthedocs.io/en/latest/build
 Specify **source directory** of current Sphinx-Needs project. 
 Normally, the source directory is the directory that contains **conf.py**.
 
+.. _activateFiles:
+
+``sphinx-needs.activateFiles``
+------------------------------
+
+Specify **a list of supported languages** when extension got activated. Default supported languages are **restructuredtext** and **python**.
+
+When opened file that is resolved to specified language by VsCode, then Sphinx-Needs language features will be available.
+
+Example:
+
+.. code-block:: json
+
+   "sphinx-needs.activateFiles": [
+        "restructuredtext",
+        "python",
+        "plaintext"
+    ]
+
+All items in the list of ``sphinx-needs.activateFiles`` must match the VsCode supported
+`language identifiers <https://code.visualstudio.com/docs/languages/identifiers>`_.
+
+.. hint::
+
+   * After update settings of ``activateFiles``, restart VsCode.
+
 Settings configuration
 ----------------------
 
