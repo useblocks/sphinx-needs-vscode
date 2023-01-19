@@ -49,6 +49,19 @@ All items in the list of ``sphinx-needs.activateFiles`` must match the VsCode su
 
    * After update settings of ``activateFiles``, restart VsCode.
 
+.. _explorerOptions:
+
+``sphinx-needs.explorerOptions``
+--------------------------------
+
+Specify **a list of comma seperated string of need options** to display at :ref:`sphinxNeedsExplorer`. Default is: [].
+
+Example:
+
+.. code-block:: json
+
+   "sphinx-needs.explorerOptions": ["type", "description"]
+
 Settings configuration
 ----------------------
 

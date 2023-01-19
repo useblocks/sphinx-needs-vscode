@@ -11,6 +11,7 @@ providing Needs information on mouse hover, and more.
 
    install
    features
+   ui
    settings
    debug
    contributing

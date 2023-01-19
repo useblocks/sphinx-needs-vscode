@@ -46,3 +46,9 @@ hover.
 **ID Auto Generation:**
 
 ![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/features_id_auto_gen.gif)
+
+## User Interface
+
+**Sphinx-Needs Explorer:**
+
+![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/sn-explorer.gif)

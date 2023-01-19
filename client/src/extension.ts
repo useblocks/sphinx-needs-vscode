@@ -1,7 +1,8 @@
 'use strict';
 
 import * as path from 'path';
-import { workspace, ExtensionContext, languages } from 'vscode';
+import { NeedsExplorerProvider } from './needsExplorer';
+import { commands, window, workspace, ExtensionContext, languages } from 'vscode';
 
 import {
 	LanguageClient,
@@ -15,6 +16,13 @@ let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
 	console.log('Activated Sphinx-Needs-VsCode Extension.');
+
+	// TreeView of Sphinx-Needs Objects
+	const needsExplorerProvider = new NeedsExplorerProvider();
+	window.createTreeView('sphinxNeedsExplorer', {
+		treeDataProvider: needsExplorerProvider
+	});
+	commands.registerCommand('sphinxNeedsExplorer.openFile', (resource) => window.showTextDocument(resource));
 
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(path.join('server', 'out', 'server.js'));

@@ -10,6 +10,8 @@ Under development
 * Adapted extension ``activationEvents`` to workspace contains ``conf.py``.
 * Added setting :ref:`activateFiles` to configure supported files for language feature activation.
 * Added feature :ref:`find_references`.
+* Added :ref:`sphinxNeedsExplorer` of Sphinx-Needs needs objects.
+* Added setting :ref:`explorerOptions` to configure displayed need options at :ref:`sphinxNeedsExplorer`.
 
 0.1.1
 -----
