@@ -1,7 +1,7 @@
 {
   "name": "sphinx-needs-vscode",
   "displayName": "Sphinx-Needs",
-  "description": "Awesome language support for Sphinx-Needs in VSCode",
+  "description": "Sphinx-Needs language support in VSCode",
   "author": {
     "name": "team useblocks"
   },
@@ -45,7 +45,7 @@
           "type": "string",
           "scope": "resource",
           "default": "",
-          "description": "Sphinx-Needs generated Needs Json file path."
+          "markdownDescription": "File path of the generated Sphinx-Need JSON file. \n\n Sphinx-Needs docs: [needs.json Builder](https://sphinx-needs.readthedocs.io/en/latest/builders.html#needs), ['needs_build_json' config option](https://sphinx-needs.readthedocs.io/en/latest/configuration.html#needs-build-json)"
         },
         "sphinx-needs.srcDir": {
           "type": "string",
@@ -59,8 +59,11 @@
           "items": {
             "type": "string"
           },
-          "default": ["restructuredtext", "python"],
-          "description": "Activate Sphinx-Needs language support for opend file that resolves to chosen language."
+          "default": [
+            "restructuredtext",
+            "python"
+          ],
+          "markdownDescription": "Activate Sphinx-Needs support for [official language identifiers](https://code.visualstudio.com/docs/languages/identifiers#_known-language-identifiers)"
         }
       }
     }
@@ -87,5 +90,8 @@
     "gts": "^3.1.1",
     "mocha": "^9.2.1",
     "typescript": "^4.9.3"
+  },
+  "dependencies": {
+    "vsce": "^2.15.0"
   }
 }
