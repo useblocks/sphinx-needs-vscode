@@ -15,9 +15,13 @@
                     "description": "Description for REQ_1.",
                     "docname": "index",
                     "doctype": ".rst",
-                    "links": ["SPEC_1", "REQ_3", "REQ_2"],
+                    "links": ["SPEC_1", "REQ_3", "REQ_2", "REQ_2"],
                     "tests": ["REQ_2"],
-                    "tests_back": []
+                    "tests_back": [],
+                    "checked_by": [],
+                    "checked_by_back": [],
+                    "triggered-by": [],
+                    "triggered-by_back": []
                 },
                 "SPEC_1": {
                     "id": "SPEC_1",
@@ -26,9 +30,13 @@
                     "description": "Description for SPEC_1.",
                     "docname": "index",
                     "doctype": ".rst",
-                    "links": ["REQ_3"],
+                    "links": ["REQ_3", "REQ_2"],
                     "tests": ["REQ_2"],
-                    "tests_back": []
+                    "tests_back": [],
+                    "checked_by": [],
+                    "checked_by_back": [],
+                    "triggered-by": [],
+                    "triggered-by_back": []
                 },
                 "REQ_2": {
                     "id": "REQ_2",
@@ -39,7 +47,11 @@
                     "doctype": ".rst",
                     "links": [],
                     "tests": [],
-                    "tests_back": ["REQ_1", "SPEC_1"]
+                    "tests_back": ["REQ_1", "SPEC_1"],
+                    "checked_by": [],
+                    "checked_by_back": ["REQ_4"],
+                    "triggered-by": [],
+                    "triggered-by_back": []
                 },
                 "REQ_3": {
                     "id": "REQ_3",
@@ -50,7 +62,26 @@
                     "doctype": ".rst",
                     "links": [],
                     "tests": [],
-                    "tests_back": []
+                    "tests_back": [],
+                    "checked_by": [],
+                    "checked_by_back": [],
+                    "triggered-by": [],
+                    "triggered-by_back": ["REQ_4"]
+                },
+                "REQ_4": {
+                    "id": "REQ_4",
+                    "title": "example fourth req",
+                    "type": "req",
+                    "description": "Description for REQ_4.",
+                    "docname": "mySubFolder/sub",
+                    "doctype": ".rst",
+                    "links": [],
+                    "tests": [],
+                    "tests_back": [],
+                    "checked_by": ["REQ_2"],
+                    "checked_by_back": [],
+                    "triggered-by": ["REQ_3"],
+                    "triggered-by_back": []
                 }
             }
         }

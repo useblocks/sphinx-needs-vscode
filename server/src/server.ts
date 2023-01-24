@@ -301,8 +301,8 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 		for (const [need_option, op_value] of Object.entries(value)) {
 			if (need_option.endsWith('_back') && op_value && Array.isArray(op_value)) {
 				op_value.forEach((id: string) => {
-					// Validates linked need ID
-					if (Object.keys(needs).indexOf(id) !== -1) {
+					// Validates linked need ID and check if already exists in bkLinks
+					if (Object.keys(needs).indexOf(id) !== -1 && value.bkLinks.indexOf(id) === -1) {
 						value.bkLinks.push(id);
 					}
 				});
@@ -718,14 +718,14 @@ connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Loc
 				// const endPosID = startPosID + link_id.length
 
 				// Find options link ID line index
-				const link_id_pattern = new RegExp(':[a-z]+: ' + '(\\w+, )*' + `${need_id}` + '(, \\w+)*', 'g');
+				const link_id_pattern = new RegExp(':(.)+: ' + '(\\w+, )*' + `${need_id}` + '(, \\w+)*', 'g');
 				const options_lines_contents = doc_contents.slice(need_directive_location);
 				// const new_found_link_id_line_idx = options_lines_contents.findIndex((line) => line.indexOf(need_id) !== -1);
 				const new_found_link_id_line_idx = options_lines_contents.findIndex((line) =>
 					line.match(link_id_pattern)
 				);
 				if (new_found_link_id_line_idx === -1) {
-					connection.console.log(`No such need ID ${need_id} in link options found under need ${link_id}`);
+					connection.console.warn(`${need_id} not found referenced under need direcitve ${link_id}`);
 					return null;
 				}
 				const found_link_id_line_idx = new_found_link_id_line_idx + need_directive_location;

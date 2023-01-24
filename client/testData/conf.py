@@ -46,6 +46,22 @@ needs_extra_links = [
         "copy": True,
         "style": "#00AA00",
         "style_part": "dotted,#00AA00",
+    },
+    {
+        "option": "checked_by",
+        "incoming": "checks",
+        "outgoing": "checked by",
+        "copy": False,
+        "style": "#00AA00",
+        "style_part": "dotted,#00AA00",
+    },
+    {
+        "option": "triggered-by",
+        "incoming": "triggers",
+        "outgoing": "triggered by",
+        "copy": False,
+        "style": "#00AA00",
+        "style_part": "dotted,#00AA00",
     }
 ]
 

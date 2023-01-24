@@ -235,6 +235,9 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 		// Activate extension
 		await activate(docUri);
 
+		// Get sub sfolder file URI
+		const subFolderFileUri = vscode.Uri.file(path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'));
+
 		const testCases: [string, vscode.Position, vscode.Location[]][] = [
 			[
 				'find references multiple',
@@ -247,6 +250,10 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 					new vscode.Location(
 						docUri,
 						new vscode.Range(new vscode.Position(22, 11), new vscode.Position(22, 16))
+					),
+					new vscode.Location(
+						subFolderFileUri,
+						new vscode.Range(new vscode.Position(19, 18), new vscode.Position(19, 23))
 					)
 				]
 			],
@@ -270,7 +277,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 			)) as vscode.Location[];
 
 			if (name === 'find references multiple') {
-				assert.ok(allReferences.length === 2, `Find References over ${name} failed.`);
+				assert.ok(allReferences.length === 3, `Find References over ${name} failed.`);
 			}
 
 			if (name === 'find references single') {
