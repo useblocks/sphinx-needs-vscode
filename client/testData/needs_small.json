@@ -1,9 +1,9 @@
 {
     "created": "2022-11-04T13:36:04.265551",
-    "current_version": "1.0",
+    "current_version": "",
     "project": "Sphinx-Needs",
     "versions": {
-        "1.0": {
+        "": {
             "created": "2022-11-04T13:36:04.265489",
             "filters": {},
             "filters_amount": 0,
