@@ -251,15 +251,25 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 		return undefined;
 	}
 
-	// Load needs from latest version
-	let needs: Needs;
-	const needs_latest_version = Object.keys(needs_json.versions).sort().at(-1);
-	if (!needs_latest_version) {
-		connection.console.log('Needs versions are empty in needsJson!');
+	// Load needs from current version
+	const curr_version: string = needs_json.current_version;
+	if (!curr_version) {
+		connection.console.warn(
+			'Needs current_version is empty in needsJson! Specify version in conf.py would be nice!'
+		);
+	}
+	// Check if versions are empty
+	if (!needs_json.versions) {
+		connection.console.error('Empty needs in needsJson!');
 		return undefined;
 	} else {
-		needs = needs_json.versions[needs_latest_version].needs;
+		if (!(curr_version in needs_json.versions)) {
+			connection.console.error('Current version not found in versions from needsJson! Can not load needs!');
+			return undefined;
+		}
 	}
+
+	const needs: Needs = needs_json.versions[curr_version].needs;
 
 	// Check needs not empty
 	if (Object.keys(needs).length === 0) {
