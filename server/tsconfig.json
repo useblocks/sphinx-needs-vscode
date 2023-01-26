@@ -2,10 +2,10 @@
     "compilerOptions": {
         "module": "commonjs",
         "moduleResolution": "node",
-        "target": "es2022",
+        "target": "es2021",
         "outDir": "out",
         "rootDir": "src",
-        "lib": ["es2022"],
+        "lib": ["es2021"],
         "sourceMap": true,
         "strict": true,
         "composite": true,
