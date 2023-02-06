@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { LogLevel, TimeStampedLogger } from './logging';
 
 interface Needs {
 	[need_id: string]: Need;
@@ -23,7 +24,10 @@ interface SNVConfig {
 	srcDir: string | undefined;
 	explorerOptions: string[] | undefined;
 	explorerItemHoverOptions: string[] | undefined;
+	loggingLevel: LogLevel;
 }
+
+let tslogger: TimeStampedLogger;
 
 export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 	private _onDidChangeTreeData: vscode.EventEmitter<NeedTree[] | undefined> = new vscode.EventEmitter<
@@ -104,6 +108,12 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			let updateTreeData = false;
 			const newConfig = this.getSNVConfigurations();
 
+			// Check if loggingLevel changed
+			if (this.snvConfigs.loggingLevel !== newConfig.loggingLevel) {
+				this.snvConfigs.loggingLevel = newConfig.loggingLevel;
+				tslogger = new TimeStampedLogger(this.snvConfigs.loggingLevel);
+			}
+
 			// Check if explorerOptions changed
 			if (this.snvConfigs.explorerOptions !== newConfig.explorerOptions) {
 				this.snvConfigs.explorerOptions = newConfig.explorerOptions;
@@ -164,7 +174,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 						}
 					} else {
 						optionItems.push(new NeedOptionItem(option + ': None', vscode.TreeItemCollapsibleState.None));
-						console.warn(`Need option ${option} not exists for ${element.id}.`);
+						tslogger.warn(`Need option ${option} not exists for ${element.id}.`);
 					}
 				}
 			});
@@ -187,6 +197,12 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		const hoverNeedOptions: string[] | undefined = vscode.workspace
 			.getConfiguration('sphinx-needs')
 			.get('explorerItemHoverOptions');
+		// Get logging level
+		let logLevel: LogLevel | undefined = vscode.workspace.getConfiguration('sphinx-needs').get('loggingLevel');
+		if (!logLevel) {
+			logLevel = 'warn';
+		}
+		tslogger = new TimeStampedLogger(logLevel);
 
 		const workspaceFolderpath =
 			vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
@@ -211,7 +227,8 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			needsJson: needs_json_path,
 			srcDir: confPyDir,
 			explorerOptions: shownNeedOptions,
-			explorerItemHoverOptions: hoverNeedOptions
+			explorerItemHoverOptions: hoverNeedOptions,
+			loggingLevel: logLevel
 		};
 	}
 
@@ -234,11 +251,11 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 
 		// Check if docname and doctype exist in need object
 		if (!('docname' in curr_need)) {
-			console.warn(`SNV Explorer -> Option docname not exists in Need ${curr_need}`);
+			tslogger.warn(`SNV Explorer -> Option docname not exists in Need ${curr_need}`);
 			return vscode.Uri.file('');
 		}
 		if (!('doctype' in curr_need)) {
-			console.warn(`SNV Explorer -> Option doctype not exists in Need ${curr_need}`);
+			tslogger.warn(`SNV Explorer -> Option doctype not exists in Need ${curr_need}`);
 			return vscode.Uri.file('');
 		}
 
@@ -247,7 +264,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		if (this.snvConfigs.srcDir) {
 			curr_need_file_path = path.resolve(this.snvConfigs.srcDir, curr_need.docname + curr_need.doctype);
 			if (!this.pathExists(curr_need_file_path)) {
-				console.warn(`SNV Explorer -> doc path for Need ${need.id} not exists: ${curr_need_file_path}`);
+				tslogger.warn(`SNV Explorer -> doc path for Need ${need.id} not exists: ${curr_need_file_path}`);
 			}
 		}
 		const needFileUri: vscode.Uri = vscode.Uri.file(curr_need_file_path);
@@ -260,13 +277,13 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			Object.values(this.needsObjects).forEach((need) => {
 				// Check if Need ID matches Need Objects key entry
 				if (!(need['id'] in this.needsObjects)) {
-					console.warn(`SNV Explorer -> Need object entry of ${need.id} not exits in given needs.json`);
+					tslogger.warn(`SNV Explorer -> Need object entry of ${need.id} not exits in given needs.json`);
 				} else {
 					// Calculate needed hoverOptionsValues for hover over item
 					const hoverOptionValues: string[] = [];
 					this.snvConfigs.explorerItemHoverOptions?.forEach((op) => {
 						if (!(op in need)) {
-							console.warn(`SNV Explorer: given need option ${op} not exists.`);
+							tslogger.warn(`SNV Explorer: given need option ${op} not exists.`);
 						} else {
 							for (const [key, value] of Object.entries(need)) {
 								if (op === key && value && value.length) {
@@ -281,7 +298,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 					try {
 						needIDPos = findDefinition(need, needFileUri);
 					} catch (err) {
-						console.warn(`SNV Explorer -> No Need ID defintion found for ${need['id']}.`);
+						tslogger.error(`SNV Explorer -> No Need ID defintion found for ${need['id']}.`);
 					}
 					if (!needIDPos) {
 						needIDPos = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
@@ -376,7 +393,7 @@ function read_need_doc_contents(fileUri: vscode.Uri): string[] | null {
 		const doc_content_lines = doc_content.split('\n');
 		return doc_content_lines;
 	} catch (err) {
-		console.error(`Error read docoment: ${err}`);
+		tslogger.error(`Error read docoment: ${err}`);
 	}
 	return null;
 }
@@ -390,7 +407,7 @@ function find_directive_definition(doc_content_lines: string[], curr_need: Need)
 			line.indexOf(id_pattern) !== -1;
 		})
 	) {
-		console.log(`No defintion found of ${curr_need.id}.`);
+		tslogger.error(`No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_id_line_idx = doc_content_lines.findIndex((line) => line.indexOf(id_pattern) !== -1);
@@ -405,7 +422,7 @@ function find_directive_definition(doc_content_lines: string[], curr_need: Need)
 			line.indexOf(directive_pattern) !== -1;
 		})
 	) {
-		console.log(`No defintion found of ${curr_need.id}.`);
+		tslogger.error(`No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_reverse_directive_line_idx = new_doc_content_lines
