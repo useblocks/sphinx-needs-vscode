@@ -54,7 +54,7 @@ All items in the list of ``sphinx-needs.activateFiles`` must match the VsCode su
 ``sphinx-needs.explorerOptions``
 --------------------------------
 
-Specify **a list of comma seperated string of need options** to display at :ref:`sphinxNeedsExplorer`. Default is: [].
+Specify **a list of comma seperated string of need options** to display at :ref:`sphinxNeedsExplorer`. Default is: ["status", "links", "tags"].
 
 Example:
 

@@ -2,7 +2,7 @@
 
 import * as path from 'path';
 import { NeedsExplorerProvider } from './needsExplorer';
-import { commands, window, workspace, ExtensionContext, languages } from 'vscode';
+import { commands, window, workspace, ExtensionContext, languages, Range, Selection } from 'vscode';
 
 import {
 	LanguageClient,
@@ -22,7 +22,17 @@ export function activate(context: ExtensionContext) {
 	window.createTreeView('sphinxNeedsExplorer', {
 		treeDataProvider: needsExplorerProvider
 	});
-	commands.registerCommand('sphinxNeedsExplorer.openFile', (resource) => window.showTextDocument(resource));
+	commands.registerCommand('sphinxNeedsExplorer.openFile', (resource, location: Range) => {
+		workspace.openTextDocument(resource).then((doc) => {
+			window.showTextDocument(doc).then((editor) => {
+				editor.selections = [new Selection(location.start, location.end)];
+				editor.revealRange(location);
+			});
+		});
+	});
+	commands.registerCommand('sphinxNeedsExplorer.openNeedsJson', () => {
+		needsExplorerProvider.openNeedsJson();
+	});
 
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(path.join('server', 'out', 'server.js'));

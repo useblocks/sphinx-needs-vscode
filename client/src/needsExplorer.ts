@@ -47,6 +47,14 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		this.listenToChangeConfiguration();
 	}
 
+	openNeedsJson(): void {
+		// Open needsJson
+		const need_json_path = this.snvConfigs.needsJson;
+		if (need_json_path && this.pathExists(need_json_path)) {
+			vscode.window.showTextDocument(vscode.Uri.file(need_json_path));
+		}
+	}
+
 	private watcher(): void {
 		// Create file watcher for needs.json
 		if (this.snvConfigs.needsJson && this.pathExists(this.snvConfigs.needsJson)) {
@@ -114,11 +122,12 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 						for (const [need_option, op_value] of Object.entries(this.needsObjects[element.id])) {
 							if (option === need_option) {
 								optionItems.push(
-									new NeedOptionItem(option, op_value, vscode.TreeItemCollapsibleState.None)
+									new NeedOptionItem(option + ': ' + op_value, vscode.TreeItemCollapsibleState.None)
 								);
 							}
 						}
 					} else {
+						optionItems.push(new NeedOptionItem(option + ': None', vscode.TreeItemCollapsibleState.None));
 						console.warn(`Need option ${option} not exists for ${element.id}.`);
 					}
 				}
@@ -215,10 +224,14 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 				} else {
 					const needItem = new NeedTree(need['id'], need['title'], vscode.TreeItemCollapsibleState.Collapsed);
 					const needFileUri = this.getNeedFilePath(need);
+					let needIDPos = findDefinition(need, needFileUri);
+					if (!needIDPos) {
+						needIDPos = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
+					}
 					needItem.command = {
 						command: 'sphinxNeedsExplorer.openFile',
 						title: 'Open File',
-						arguments: [needFileUri]
+						arguments: [needFileUri, needIDPos]
 					};
 					needsItems.push(needItem);
 				}
@@ -246,21 +259,87 @@ class NeedTree extends vscode.TreeItem {
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState
 	) {
 		super(id, collapsibleState);
-		// this.tooltip = `${this.id}--${this.title}`;
 		this.tooltip = new vscode.MarkdownString(`${this.id}--${this.title}`, true);
 		this.description = this.title;
 	}
 }
 
 class NeedOptionItem extends vscode.TreeItem {
-	constructor(
-		private option: string,
-		private value: string | string[],
-		collapsibleState: vscode.TreeItemCollapsibleState
-	) {
+	constructor(private option: string, collapsibleState: vscode.TreeItemCollapsibleState) {
 		super(option, collapsibleState);
-		// this.tooltip = `${this.option}: ${this.value}`;
-		this.tooltip = new vscode.MarkdownString(`${this.option}: ${this.value}`, true);
-		this.description = this.value.toString();
+		this.tooltip = new vscode.MarkdownString(`${this.option}`, true);
+		// if (this.value) {
+		// 	this.description = this.value.toString();
+		// } else {
+		// 	this.description = undefined;
+		// }
 	}
+}
+
+function findDefinition(need: Need, fileUri: vscode.Uri): vscode.Range | undefined {
+	// Return definition location of given Need ID
+
+	// Read the document where Need ID is at
+	const doc_contents = read_need_doc_contents(fileUri);
+	if (!doc_contents) {
+		return;
+	}
+
+	// Get location of need directive definition line index, e.g. .. req::
+	const need_directive_location = find_directive_definition(doc_contents, need);
+	if (!need_directive_location) {
+		return;
+	}
+
+	const startIdxID = doc_contents[need_directive_location + 1].indexOf(need['id']);
+	const endIdxID = startIdxID + need['id'].length;
+	const startPos = new vscode.Position(need_directive_location + 1, startIdxID);
+	const endPos = new vscode.Position(need_directive_location + 1, endIdxID);
+
+	return new vscode.Range(startPos, endPos);
+}
+
+function read_need_doc_contents(fileUri: vscode.Uri): string[] | null {
+	try {
+		const doc_content: string = fs.readFileSync(fileUri.fsPath, 'utf8');
+		const doc_content_lines = doc_content.split('\n');
+		return doc_content_lines;
+	} catch (err) {
+		console.error(`Error read docoment: ${err}`);
+	}
+	return null;
+}
+
+function find_directive_definition(doc_content_lines: string[], curr_need: Need): number | null {
+	// Get line of need id definition with pattern {:id: need_id}
+	const id_pattern = `:id: ${curr_need.id}`;
+	// Check if id_pattern exists in target document
+	if (
+		doc_content_lines.every((line) => {
+			line.indexOf(id_pattern) !== -1;
+		})
+	) {
+		console.log(`No defintion found of ${curr_need.id}.`);
+		return null;
+	}
+	const found_id_line_idx = doc_content_lines.findIndex((line) => line.indexOf(id_pattern) !== -1);
+
+	// Get line of directive with pattern {.. {need_type}::}
+	const directive_pattern = `.. ${curr_need.type}::`;
+	// Get lines before id_line_idx to find the line of directive
+	const new_doc_content_lines = doc_content_lines.slice(0, found_id_line_idx);
+	// Check if direcrive_pattern exists in target document
+	if (
+		new_doc_content_lines.every((line) => {
+			line.indexOf(directive_pattern) !== -1;
+		})
+	) {
+		console.log(`No defintion found of ${curr_need.id}.`);
+		return null;
+	}
+	const found_reverse_directive_line_idx = new_doc_content_lines
+		.reverse()
+		.findIndex((line) => line.indexOf(directive_pattern) !== -1);
+	const found_directive_line_idx = new_doc_content_lines.length - 1 - found_reverse_directive_line_idx;
+	return found_directive_line_idx;
 }

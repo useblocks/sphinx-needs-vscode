@@ -45,8 +45,21 @@
       {
         "command": "sphinxNeedsExplorer.openFile",
         "title": "Open File"
+      },
+      {
+        "command": "sphinxNeedsExplorer.openNeedsJson",
+        "title": "Open NeedsJson"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "sphinxNeedsExplorer.openNeedsJson",
+          "when": "view == sphinxNeedsExplorer",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "Sphinx-Needs",
@@ -92,7 +105,7 @@
           "items": {
             "type": "string"
           },
-          "default": [],
+          "default": ["status", "links", "tags"],
           "description": "Sphinx-Needs need options to be shown under tree view of Sphinx-Needs Explorer."
         }
       }

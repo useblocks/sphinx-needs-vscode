@@ -5,6 +5,5 @@
         "restructuredtext",
         "python",
         "plaintext"
-    ],
-    "sphinx-needs.explorerOptions": ["type", "description"]
+    ]
 }
