@@ -82,6 +82,21 @@
                     "checked_by_back": [],
                     "triggered-by": ["REQ_3"],
                     "triggered-by_back": []
+                },
+                "REQ_5": {
+                    "id": "REQ_5",
+                    "title": "example fourth req",
+                    "type": "req",
+                    "description": "Description for REQ_5.",
+                    "docname": "mySubFolder/sub",
+                    "doctype": ".rst",
+                    "links": [],
+                    "tests": [],
+                    "tests_back": [],
+                    "checked_by": ["REQ_2"],
+                    "checked_by_back": [],
+                    "triggered-by": ["REQ_3"],
+                    "triggered-by_back": []
                 }
             }
         }

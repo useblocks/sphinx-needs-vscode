@@ -224,7 +224,12 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 				} else {
 					const needItem = new NeedTree(need['id'], need['title'], vscode.TreeItemCollapsibleState.Collapsed);
 					const needFileUri = this.getNeedFilePath(need);
-					let needIDPos = findDefinition(need, needFileUri);
+					let needIDPos;
+					try {
+						needIDPos = findDefinition(need, needFileUri);
+					} catch (err) {
+						console.warn(`SNV Explorer -> No Need ID defintion found for ${need['id']}.`);
+					}
 					if (!needIDPos) {
 						needIDPos = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
 					}
