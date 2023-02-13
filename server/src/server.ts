@@ -343,14 +343,20 @@ function get_word(params: TextDocumentPositionParams): string {
 		return '';
 	}
 	const text = document.getText(curr_line).replace(/[\n\r]/g, '');
+	// Check if text starts with empty psace, e.g. text = '      REQ_3, REQ_2'
+	// Trim start empty space in text
+	const newText = text.trimStart();
+	let curr_char_pos = params.position.character;
+	if (newText.length < text.length) {
+		curr_char_pos = curr_char_pos - text.length + newText.length;
+	}
 
-	// Breaks line content into words by space or comma
-	const words = text.split(/[ ,]+/);
+	// Breaks line content into words by space or comma, and filter out empty string
+	const words = text.split(/[ ,]+/).filter((word) => word.length > 0);
 
 	// Get current word based on current cursor character position, e.g. ['random', 'text', 'some', 'where']
 	let index = 0;
 	let length = 0;
-	const curr_char_pos = params.position.character;
 	for (const word of words) {
 		length = length + word.length;
 		if (curr_char_pos <= index + length) {
@@ -728,7 +734,7 @@ connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Loc
 				// const endPosID = startPosID + link_id.length
 
 				// Find options link ID line index
-				const link_id_pattern = new RegExp(':(.)+: ' + '(\\w+, )*' + `${need_id}` + '(, \\w+)*', 'g');
+				const link_id_pattern = `${need_id}`;
 				const options_lines_contents = doc_contents.slice(need_directive_location);
 				// const new_found_link_id_line_idx = options_lines_contents.findIndex((line) => line.indexOf(need_id) !== -1);
 				const new_found_link_id_line_idx = options_lines_contents.findIndex((line) =>

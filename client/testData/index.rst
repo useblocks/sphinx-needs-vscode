@@ -11,7 +11,8 @@ Needs
 .. req:: First requirement
    :id: REQ_1
    :status: open
-   :links: SPEC_1, REQ_3, REQ_2
+   :links: SPEC_1,
+         REQ_3, REQ_2
    :tests: REQ_2
 
    Requirement content
