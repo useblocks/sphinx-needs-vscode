@@ -56,6 +56,22 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		}
 	}
 
+	openSettings(): void {
+		// Open Settings of this extension
+		vscode.commands.executeCommand('workbench.action.openSettings', 'sphinx-needs');
+	}
+
+	openSphinxNeedsOfficialDocs(): void {
+		// Open Sphinx-Needs official docs in default external browser
+		// vscode.env.openExternal(vscode.Uri.parse('https://sphinx-needs.readthedocs.io/en/latest/index.html'));
+
+		// Open Sphinx-Needs official docs in internal simple browser inside vscode
+		vscode.commands.executeCommand(
+			'simpleBrowser.api.open',
+			'https://sphinx-needs.readthedocs.io/en/latest/index.html'
+		);
+	}
+
 	private watcher(): void {
 		// Create file watcher for needs.json
 		if (this.snvConfigs.needsJson && this.pathExists(this.snvConfigs.needsJson)) {

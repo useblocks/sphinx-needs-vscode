@@ -33,6 +33,12 @@ export function activate(context: ExtensionContext) {
 	commands.registerCommand('sphinxNeedsExplorer.openNeedsJson', () => {
 		needsExplorerProvider.openNeedsJson();
 	});
+	commands.registerCommand('sphinxNeedsExplorer.openSettings', () => {
+		needsExplorerProvider.openSettings();
+	});
+	commands.registerCommand('sphinxNeedsExplorer.openSphinxNeedsOfficialDocs', () => {
+		needsExplorerProvider.openSphinxNeedsOfficialDocs();
+	});
 
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(path.join('server', 'out', 'server.js'));

@@ -48,13 +48,43 @@
       },
       {
         "command": "sphinxNeedsExplorer.openNeedsJson",
-        "title": "Open NeedsJson"
+        "title": "Open NeedsJson",
+        "icon": {
+          "light": "utils/file-light.svg",
+          "dark": "utils/file-dark.svg"
+        }
+      },
+      {
+        "command": "sphinxNeedsExplorer.openSettings",
+        "title": "Open Settings",
+        "icon": {
+          "light": "utils/settings-gear-light.svg",
+          "dark": "utils/settings-gear-dark.svg"
+        }
+      },
+      {
+        "command": "sphinxNeedsExplorer.openSphinxNeedsOfficialDocs",
+        "title": "Open Sphinx-Needs Official Docs",
+        "icon": {
+          "light": "utils/browser-light.svg",
+          "dark": "utils/browser-dark.svg"
+        }
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "sphinxNeedsExplorer.openNeedsJson",
+          "when": "view == sphinxNeedsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "sphinxNeedsExplorer.openSettings",
+          "when": "view == sphinxNeedsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "sphinxNeedsExplorer.openSphinxNeedsOfficialDocs",
           "when": "view == sphinxNeedsExplorer",
           "group": "navigation"
         }
