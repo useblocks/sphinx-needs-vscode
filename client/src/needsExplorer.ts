@@ -22,6 +22,7 @@ interface SNVConfig {
 	needsJson: string | undefined;
 	srcDir: string | undefined;
 	explorerOptions: string[] | undefined;
+	explorerItemHoverOptions: string[] | undefined;
 }
 
 export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
@@ -77,6 +78,12 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			// Check if explorerOptions changed
 			if (this.snvConfigs.explorerOptions !== newConfig.explorerOptions) {
 				this.snvConfigs.explorerOptions = newConfig.explorerOptions;
+				updateTreeData = true;
+			}
+
+			// Check if explorerItemHoverOptions changed
+			if (this.snvConfigs.explorerItemHoverOptions !== newConfig.explorerItemHoverOptions) {
+				this.snvConfigs.explorerItemHoverOptions = newConfig.explorerItemHoverOptions;
 				updateTreeData = true;
 			}
 
@@ -148,6 +155,9 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		const shownNeedOptions: string[] | undefined = vscode.workspace
 			.getConfiguration('sphinx-needs')
 			.get('explorerOptions');
+		const hoverNeedOptions: string[] | undefined = vscode.workspace
+			.getConfiguration('sphinx-needs')
+			.get('explorerItemHoverOptions');
 
 		const workspaceFolderpath =
 			vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
@@ -171,7 +181,8 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		return {
 			needsJson: needs_json_path,
 			srcDir: confPyDir,
-			explorerOptions: shownNeedOptions
+			explorerOptions: shownNeedOptions,
+			explorerItemHoverOptions: hoverNeedOptions
 		};
 	}
 
@@ -222,7 +233,27 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 				if (!(need['id'] in this.needsObjects)) {
 					console.warn(`SNV Explorer -> Need object entry of ${need.id} not exits in given needs.json`);
 				} else {
-					const needItem = new NeedTree(need['id'], need['title'], vscode.TreeItemCollapsibleState.Collapsed);
+					// Calculate needed hoverOptionsValues for hover over item
+					const hoverOptionValues: string[] = [];
+					this.snvConfigs.explorerItemHoverOptions?.forEach((op) => {
+						if (!(op in need)) {
+							hoverOptionValues.push(op + ':None');
+							console.warn(`SNV Explorer: given need option ${op} not exists.`);
+						} else {
+							for (const [key, value] of Object.entries(need)) {
+								if (op === key) {
+									hoverOptionValues.push(op + ':' + value);
+								}
+							}
+						}
+					});
+					const needItem = new NeedTree(
+						need['id'],
+						need['title'],
+						need['description'],
+						hoverOptionValues,
+						vscode.TreeItemCollapsibleState.Collapsed
+					);
 					const needFileUri = this.getNeedFilePath(need);
 					let needIDPos;
 					try {
@@ -261,11 +292,28 @@ class NeedTree extends vscode.TreeItem {
 	constructor(
 		public readonly id: string,
 		private title: string,
+		private content: string,
+		private hoverOptions: string[],
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState
 	) {
 		super(id, collapsibleState);
-		this.tooltip = new vscode.MarkdownString(`${this.id}--${this.title}`, true);
-		this.description = this.title;
+		let hoverContents = `**${this.title}**\n\n\`\`\`\n${this.content}\n\`\`\`\n\n`;
+		if (this.hoverOptions) {
+			let cnt = 1;
+			this.hoverOptions.forEach((op) => {
+				hoverContents = hoverContents.concat(
+					`  <span style="color:#ffffff;background-color:#0078d4;">${op}</span>`
+				);
+				// Display only two optionValues per line, incase line too long
+				if (cnt % 2 === 0) {
+					hoverContents = hoverContents.concat('\n\n');
+				}
+				cnt += 1;
+			});
+		}
+		this.tooltip = new vscode.MarkdownString(hoverContents, true);
+		this.tooltip.supportHtml = true;
+		// this.description = this.title;
 	}
 }
 

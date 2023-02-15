@@ -107,6 +107,15 @@
           },
           "default": ["status", "links", "tags"],
           "description": "Sphinx-Needs need options to be shown under tree view of Sphinx-Needs Explorer."
+        },
+        "sphinx-needs.explorerItemHoverOptions": {
+          "type": "array",
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "default": ["tags"],
+          "description": "Sphinx-Needs need options to be shown when hover over tree item in Sphinx-Needs Explorer."
         }
       }
     }
