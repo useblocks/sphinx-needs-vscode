@@ -33,15 +33,14 @@ jobs:
         uses: lannonbr/vsce-action@3.0.0
         with:
           args: "package"
-        working-directory: ./nightly
 
       - name: Storing artifacts
         uses: actions/upload-artifact@v3
         with:
           name: sphinx-needs-vscode-nightly.vsix
-          path: nightly/sphinx-needs-vscode-*.vsix
+          path: sphinx-needs-vscode-*.vsix
           retention-days: 7
 
-      - name: Rename VSIX file
+      - name: Move and Rename VSIX file
         run: |
-          mv nightly/sphinx-needs-vscode-*.vsix nightly/sphinx-needs-vscode-nighlty-latest.vsix
+          mv sphinx-needs-vscode-*.vsix nightly/sphinx-needs-vscode-nighlty-latest.vsix
