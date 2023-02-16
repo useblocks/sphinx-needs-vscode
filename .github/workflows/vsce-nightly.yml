@@ -1,7 +1,7 @@
 # Build and store a VSIX file when pushed to main branch or pull requests, users can install the extension locally
-# to try the latest changes or features with e.g."code --install-extension sphinx-needs-vscode-nightly-latest.vsix"
+# to try the latest changes or features with "code --install-extension sphinx-needs-vscode-nightly.vsix"
 
-name: Build and Store VSIX locally
+name: Vsce Nightly
 
 on:
   push:
@@ -40,7 +40,3 @@ jobs:
           name: sphinx-needs-vscode-nightly.vsix
           path: sphinx-needs-vscode-*.vsix
           retention-days: 7
-
-      - name: Move and Rename VSIX file
-        run: |
-          mv sphinx-needs-vscode-*.vsix nightly/sphinx-needs-vscode-nighlty-latest.vsix
