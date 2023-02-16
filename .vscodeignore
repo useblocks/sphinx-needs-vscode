@@ -27,3 +27,5 @@ Makefile
 **/*.map
 **/*.ts
 **/tsconfig.tsBuildInfoFile
+
+nightly/
