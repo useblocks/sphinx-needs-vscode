@@ -77,11 +77,11 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 
 		const testCases: [string, vscode.Position, vscode.CompletionList][] = [
 			['trigger ..', new vscode.Position(10, 2), expectedSnippets],
-			['trigger :', new vscode.Position(33, 1), expectedNeedRoleOrOption],
-			['trigger > at lev1', new vscode.Position(37, 9), expectedNeedPathLev1],
-			['trigger > at lev2', new vscode.Position(39, 13), expectedNeedPathLev2],
-			['trigger > at lev3', new vscode.Position(41, 23), expectedNeedPathLev3],
-			['trigger /', new vscode.Position(43, 25), expectedPathFolderInsider]
+			['trigger :', new vscode.Position(34, 1), expectedNeedRoleOrOption],
+			['trigger > at lev1', new vscode.Position(38, 9), expectedNeedPathLev1],
+			['trigger > at lev2', new vscode.Position(40, 13), expectedNeedPathLev2],
+			['trigger > at lev3', new vscode.Position(42, 23), expectedNeedPathLev3],
+			['trigger /', new vscode.Position(44, 25), expectedPathFolderInsider]
 		];
 
 		const promises = testCases.map(async ([name, position, expectedItems]) => {
@@ -185,25 +185,31 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 		await activate(docUri);
 
 		const testCases: [string, vscode.Position, string, vscode.Position][] = [
-			['goto same file', new vscode.Position(20, 12), docUri.path, new vscode.Position(19, 0)],
+			['goto same file', new vscode.Position(21, 12), docUri.path, new vscode.Position(20, 0)],
 			[
 				'goto different file',
-				new vscode.Position(35, 1),
+				new vscode.Position(36, 1),
 				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
 				new vscode.Position(3, 0)
 			],
-			['goto multiple ID same line', new vscode.Position(35, 10), docUri.path, new vscode.Position(19, 0)],
+			['goto multiple ID same line', new vscode.Position(36, 10), docUri.path, new vscode.Position(20, 0)],
 			[
 				'goto option with multiple ID first',
 				new vscode.Position(13, 15),
 				docUri.path,
-				new vscode.Position(19, 0)
+				new vscode.Position(20, 0)
 			],
 			[
 				'goto option with multiple ID last',
-				new vscode.Position(13, 28),
+				new vscode.Position(14, 19),
 				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
 				new vscode.Position(3, 0)
+			],
+			[
+				'goto option with multiple ID first',
+				new vscode.Position(14, 11),
+				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				new vscode.Position(9, 0)
 			],
 			['negative goto', new vscode.Position(6, 3), '', new vscode.Position(0, 0)]
 		];
@@ -241,15 +247,15 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 		const testCases: [string, vscode.Position, vscode.Location[]][] = [
 			[
 				'find references multiple',
-				new vscode.Position(22, 14),
+				new vscode.Position(23, 14),
 				[
 					new vscode.Location(
 						docUri,
-						new vscode.Range(new vscode.Position(13, 19), new vscode.Position(13, 24))
+						new vscode.Range(new vscode.Position(14, 9), new vscode.Position(14, 14))
 					),
 					new vscode.Location(
 						docUri,
-						new vscode.Range(new vscode.Position(22, 11), new vscode.Position(22, 16))
+						new vscode.Range(new vscode.Position(23, 11), new vscode.Position(23, 16))
 					),
 					new vscode.Location(
 						subFolderFileUri,
@@ -259,7 +265,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 			],
 			[
 				'find references single',
-				new vscode.Position(20, 10),
+				new vscode.Position(21, 10),
 				[
 					new vscode.Location(
 						docUri,
