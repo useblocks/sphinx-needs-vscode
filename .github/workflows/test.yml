@@ -27,7 +27,7 @@ jobs:
         run: npm run vscode:prepublish
 
       - name: Run tests
-        uses: GabrielBB/xvfb-action@v1.0
+        uses: GabrielBB/xvfb-action@v1.6
         with:
           run: npm run test
 
