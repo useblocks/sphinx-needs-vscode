@@ -1,0 +1,42 @@
+# Build and store a VSIX file when pushed to main branch or pull requests, users can install the extension locally
+# to try the latest changes or features with "code --install-extension sphinx-needs-vscode-nightly.vsix"
+
+name: Vsce Nightly
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build_vsix:
+    name: Build and store VSIX
+    runs-on: ubuntu-latest
+    if: github.repository == 'useblocks/sphinx-needs-vscode'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm run vscode:prepublish
+
+      - name: Create vsix package
+        uses: lannonbr/vsce-action@3.0.0
+        with:
+          args: "package"
+
+      - name: Storing artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sphinx-needs-vscode-nightly.vsix
+          path: sphinx-needs-vscode-*.vsix
+          retention-days: 7
