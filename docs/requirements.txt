@@ -2,3 +2,4 @@ sphinx>=4.0
 sphinxcontrib-plantuml
 sphinx-needs
 sphinx-immaterial
+esbonio<=0.14.3

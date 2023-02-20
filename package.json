@@ -21,11 +21,75 @@
   "activationEvents": [
     "workspaceContains:conf.py",
     "workspaceContains:*/conf.py",
-    "workspaceContains:*/*/conf.py"
+    "workspaceContains:*/*/conf.py",
+    "onView:sphinxNeedsExplorer"
   ],
   "main": "./dist/extension.js",
   "capabilities": {},
   "contributes": {
+    "viewsWelcome": [
+      {
+        "view": "sphinxNeedsExplorer",
+        "contents": "Sphinx-Needs NeedsTree View.\n"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "sphinxNeedsExplorer",
+          "name": "Sphinx-Needs Explorer"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "sphinxNeedsExplorer.openFile",
+        "title": "Open File"
+      },
+      {
+        "command": "sphinxNeedsExplorer.openNeedsJson",
+        "title": "Open NeedsJson",
+        "icon": {
+          "light": "utils/file-light.svg",
+          "dark": "utils/file-dark.svg"
+        }
+      },
+      {
+        "command": "sphinxNeedsExplorer.openSettings",
+        "title": "Open Settings",
+        "icon": {
+          "light": "utils/settings-gear-light.svg",
+          "dark": "utils/settings-gear-dark.svg"
+        }
+      },
+      {
+        "command": "sphinxNeedsExplorer.openSphinxNeedsOfficialDocs",
+        "title": "Open Sphinx-Needs Official Docs",
+        "icon": {
+          "light": "utils/browser-light.svg",
+          "dark": "utils/browser-dark.svg"
+        }
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "sphinxNeedsExplorer.openNeedsJson",
+          "when": "view == sphinxNeedsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "sphinxNeedsExplorer.openSettings",
+          "when": "view == sphinxNeedsExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "sphinxNeedsExplorer.openSphinxNeedsOfficialDocs",
+          "when": "view == sphinxNeedsExplorer",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "Sphinx-Needs",
@@ -64,6 +128,24 @@
             "python"
           ],
           "markdownDescription": "Activate Sphinx-Needs support for [official language identifiers](https://code.visualstudio.com/docs/languages/identifiers#_known-language-identifiers)"
+        },
+        "sphinx-needs.explorerOptions":{
+          "type": "array",
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "default": ["status", "links", "tags"],
+          "description": "Sphinx-Needs need options to be shown under tree view of Sphinx-Needs Explorer."
+        },
+        "sphinx-needs.explorerItemHoverOptions": {
+          "type": "array",
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "default": ["tags"],
+          "description": "Sphinx-Needs need options to be shown when hover over tree item in Sphinx-Needs Explorer."
         }
       }
     }
@@ -78,9 +160,9 @@
     "test": "npm run test-compile && node ./client/out/test/runTest.js",
     "watch": "tsc -b -w",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "lint": "gts lint ./client/src/extension.ts ./server/src",
+    "lint": "gts lint ./client/src/extension.ts ./client/src/needsExplorer.ts ./server/src",
     "clean": "gts clean && cd client && gts clean && cd ../server && gts clean && cd ..",
-    "fix-lint": "gts fix ./client/src/extension.ts ./server/src"
+    "fix-lint": "gts fix ./client/src/extension.ts  ./client/src/needsExplorer.ts ./server/src"
   },
   "devDependencies": {
     "@types/glob": "8.0.0",

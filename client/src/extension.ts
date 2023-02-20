@@ -1,7 +1,8 @@
 'use strict';
 
 import * as path from 'path';
-import { workspace, ExtensionContext, languages } from 'vscode';
+import { NeedsExplorerProvider } from './needsExplorer';
+import { commands, window, workspace, ExtensionContext, languages, Range, Selection } from 'vscode';
 
 import {
 	LanguageClient,
@@ -15,6 +16,29 @@ let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
 	console.log('Activated Sphinx-Needs-VsCode Extension.');
+
+	// TreeView of Sphinx-Needs Objects
+	const needsExplorerProvider = new NeedsExplorerProvider();
+	window.createTreeView('sphinxNeedsExplorer', {
+		treeDataProvider: needsExplorerProvider
+	});
+	commands.registerCommand('sphinxNeedsExplorer.openFile', (resource, location: Range) => {
+		workspace.openTextDocument(resource).then((doc) => {
+			window.showTextDocument(doc).then((editor) => {
+				editor.selections = [new Selection(location.start, location.end)];
+				editor.revealRange(location);
+			});
+		});
+	});
+	commands.registerCommand('sphinxNeedsExplorer.openNeedsJson', () => {
+		needsExplorerProvider.openNeedsJson();
+	});
+	commands.registerCommand('sphinxNeedsExplorer.openSettings', () => {
+		needsExplorerProvider.openSettings();
+	});
+	commands.registerCommand('sphinxNeedsExplorer.openSphinxNeedsOfficialDocs', () => {
+		needsExplorerProvider.openSphinxNeedsOfficialDocs();
+	});
 
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(path.join('server', 'out', 'server.js'));
