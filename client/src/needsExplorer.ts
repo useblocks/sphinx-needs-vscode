@@ -72,6 +72,19 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		);
 	}
 
+	goToDefinition(item: NeedTree): void {
+		vscode.workspace.openTextDocument(item.idLoc.uri).then((doc) => {
+			vscode.window.showTextDocument(doc).then((editor) => {
+				editor.selections = [new vscode.Selection(item.idLoc.range.start, item.idLoc.range.end)];
+				editor.revealRange(item.idLoc.range, vscode.TextEditorRevealType.Default);
+			});
+		});
+	}
+
+	copyNeedID(item: NeedTree): void {
+		vscode.env.clipboard.writeText(item.id);
+	}
+
 	private watcher(): void {
 		// Create file watcher for needs.json
 		if (this.snvConfigs.needsJson && this.pathExists(this.snvConfigs.needsJson)) {
@@ -253,23 +266,16 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 					const hoverOptionValues: string[] = [];
 					this.snvConfigs.explorerItemHoverOptions?.forEach((op) => {
 						if (!(op in need)) {
-							hoverOptionValues.push(op + ':None');
 							console.warn(`SNV Explorer: given need option ${op} not exists.`);
 						} else {
 							for (const [key, value] of Object.entries(need)) {
-								if (op === key) {
-									hoverOptionValues.push(op + ':' + value);
+								if (op === key && value) {
+									hoverOptionValues.push(op + ': ' + value);
 								}
 							}
 						}
 					});
-					const needItem = new NeedTree(
-						need['id'],
-						need['title'],
-						need['description'],
-						hoverOptionValues,
-						vscode.TreeItemCollapsibleState.Collapsed
-					);
+					// Get need ID Definition Location
 					const needFileUri = this.getNeedFilePath(need);
 					let needIDPos;
 					try {
@@ -280,11 +286,16 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 					if (!needIDPos) {
 						needIDPos = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
 					}
-					needItem.command = {
-						command: 'sphinxNeedsExplorer.openFile',
-						title: 'Open File',
-						arguments: [needFileUri, needIDPos]
-					};
+					const needIDLoc = new vscode.Location(needFileUri, needIDPos);
+
+					const needItem = new NeedTree(
+						need['id'],
+						need['title'],
+						need['description'],
+						hoverOptionValues,
+						needIDLoc,
+						vscode.TreeItemCollapsibleState.Collapsed
+					);
 					needsItems.push(needItem);
 				}
 			});
@@ -310,38 +321,29 @@ class NeedTree extends vscode.TreeItem {
 		private title: string,
 		private content: string,
 		private hoverOptions: string[],
+		public readonly idLoc: vscode.Location,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState
 	) {
 		super(id, collapsibleState);
 		let hoverContents = `**${this.title}**\n\n\`\`\`\n${this.content}\n\`\`\`\n\n`;
 		if (this.hoverOptions) {
-			let cnt = 1;
 			this.hoverOptions.forEach((op) => {
 				hoverContents = hoverContents.concat(
-					`  <span style="color:#ffffff;background-color:#0078d4;">${op}</span>`
+					`&nbsp;<span style="color:#ffffff;background-color:#0078d4;">&nbsp;&nbsp;${op}&nbsp;&nbsp;</span>&nbsp;`
 				);
-				// Display only two optionValues per line, incase line too long
-				if (cnt % 2 === 0) {
-					hoverContents = hoverContents.concat('\n\n');
-				}
-				cnt += 1;
 			});
 		}
 		this.tooltip = new vscode.MarkdownString(hoverContents, true);
 		this.tooltip.supportHtml = true;
-		// this.description = this.title;
 	}
+
+	contextValue = 'needID';
 }
 
 class NeedOptionItem extends vscode.TreeItem {
 	constructor(private option: string, collapsibleState: vscode.TreeItemCollapsibleState) {
 		super(option, collapsibleState);
 		this.tooltip = new vscode.MarkdownString(`${this.option}`, true);
-		// if (this.value) {
-		// 	this.description = this.value.toString();
-		// } else {
-		// 	this.description = undefined;
-		// }
 	}
 }
 
