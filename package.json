@@ -32,7 +32,7 @@
         {
           "id": "sphinx-needs",
           "title": "Sphinx-Needs",
-          "icon": "utils/checklist-dark.svg"
+          "icon": "utils/sphinx-needs-logo-favicon.png"
         }
       ]
     },
@@ -64,42 +64,27 @@
       {
         "command": "sphinxNeedsExplorer.gotoDef",
         "title": "Goto Definition",
-        "icon": {
-          "light": "utils/location-light.svg",
-          "dark": "utils/location-dark.svg"
-        }
+        "icon": "$(location)"
       },
       {
         "command": "sphinxNeedsExplorer.openNeedsJson",
         "title": "Open NeedsJson",
-        "icon": {
-          "light": "utils/file-light.svg",
-          "dark": "utils/file-dark.svg"
-        }
+        "icon": "$(file)"
       },
       {
         "command": "sphinxNeedsExplorer.openSettings",
         "title": "Open Settings",
-        "icon": {
-          "light": "utils/settings-gear-light.svg",
-          "dark": "utils/settings-gear-dark.svg"
-        }
+        "icon": "$(settings-gear)"
       },
       {
         "command": "sphinxNeedsExplorer.openSphinxNeedsOfficialDocs",
         "title": "Open Sphinx-Needs Official Docs",
-        "icon": {
-          "light": "utils/browser-light.svg",
-          "dark": "utils/browser-dark.svg"
-        }
+        "icon": "$(browser)"
       },
       {
         "command": "sphinxNeedsExplorer.copyID",
         "title": "Copy Need ID",
-        "icon": {
-          "light": "utils/briefcase-light.svg",
-          "dark": "utils/briefcase-dark.svg"
-        }
+        "icon": "$(briefcase)"
       },
       {
         "command": "sphinxNeedsHelp.openUrl",
