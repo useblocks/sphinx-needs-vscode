@@ -269,7 +269,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 							console.warn(`SNV Explorer: given need option ${op} not exists.`);
 						} else {
 							for (const [key, value] of Object.entries(need)) {
-								if (op === key && value) {
+								if (op === key && value && value.length) {
 									hoverOptionValues.push(op + ': ' + value);
 								}
 							}
