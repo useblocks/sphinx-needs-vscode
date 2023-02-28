@@ -2,7 +2,8 @@
 
 import * as path from 'path';
 import { NeedsExplorerProvider } from './needsExplorer';
-import { commands, window, workspace, ExtensionContext, languages, Range, Selection } from 'vscode';
+import { NeedsHelpsProvider } from './needsHelp';
+import { commands, env, window, workspace, ExtensionContext, languages, Uri } from 'vscode';
 
 import {
 	LanguageClient,
@@ -22,13 +23,8 @@ export function activate(context: ExtensionContext) {
 	window.createTreeView('sphinxNeedsExplorer', {
 		treeDataProvider: needsExplorerProvider
 	});
-	commands.registerCommand('sphinxNeedsExplorer.openFile', (resource, location: Range) => {
-		workspace.openTextDocument(resource).then((doc) => {
-			window.showTextDocument(doc).then((editor) => {
-				editor.selections = [new Selection(location.start, location.end)];
-				editor.revealRange(location);
-			});
-		});
+	commands.registerCommand('sphinxNeedsExplorer.gotoDef', (item) => {
+		needsExplorerProvider.goToDefinition(item);
 	});
 	commands.registerCommand('sphinxNeedsExplorer.openNeedsJson', () => {
 		needsExplorerProvider.openNeedsJson();
@@ -38,6 +34,19 @@ export function activate(context: ExtensionContext) {
 	});
 	commands.registerCommand('sphinxNeedsExplorer.openSphinxNeedsOfficialDocs', () => {
 		needsExplorerProvider.openSphinxNeedsOfficialDocs();
+	});
+	commands.registerCommand('sphinxNeedsExplorer.copyID', (item) => {
+		needsExplorerProvider.copyNeedID(item);
+	});
+
+	// Treeview for Sphinx-Needs help
+	const needsHelpsProvider = new NeedsHelpsProvider();
+	window.createTreeView('sphinxNeedsHelp', {
+		treeDataProvider: needsHelpsProvider
+	});
+	commands.registerCommand('sphinxNeedsHelp.openUrl', (item) => {
+		//env.openExternal(Uri.parse(item.link));
+		env.openExternal(Uri.parse(item));
 	});
 
 	// The server is implemented in node

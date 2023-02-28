@@ -27,48 +27,68 @@
   "main": "./dist/extension.js",
   "capabilities": {},
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sphinx-needs",
+          "title": "Sphinx-Needs",
+          "icon": "utils/sphinx-needs-logo-favicon.png"
+        }
+      ]
+    },
     "viewsWelcome": [
       {
         "view": "sphinxNeedsExplorer",
         "contents": "Sphinx-Needs NeedsTree View.\n"
+      },
+      {
+        "view": "sphinxNeedsHelp",
+        "contents": "Sphinx-Needs Help View.\n"
       }
     ],
     "views": {
-      "explorer": [
+      "sphinx-needs": [
         {
           "id": "sphinxNeedsExplorer",
-          "name": "Sphinx-Needs Explorer"
+          "name": "Explorer",
+          "contextualTitle": "Explorer"
+        },
+        {
+          "id": "sphinxNeedsHelp",
+          "name": "Help",
+          "contextualTitle": "Help"
         }
       ]
     },
     "commands": [
       {
-        "command": "sphinxNeedsExplorer.openFile",
-        "title": "Open File"
+        "command": "sphinxNeedsExplorer.gotoDef",
+        "title": "Goto Definition",
+        "icon": "$(location)"
       },
       {
         "command": "sphinxNeedsExplorer.openNeedsJson",
         "title": "Open NeedsJson",
-        "icon": {
-          "light": "utils/file-light.svg",
-          "dark": "utils/file-dark.svg"
-        }
+        "icon": "$(file)"
       },
       {
         "command": "sphinxNeedsExplorer.openSettings",
         "title": "Open Settings",
-        "icon": {
-          "light": "utils/settings-gear-light.svg",
-          "dark": "utils/settings-gear-dark.svg"
-        }
+        "icon": "$(settings-gear)"
       },
       {
         "command": "sphinxNeedsExplorer.openSphinxNeedsOfficialDocs",
         "title": "Open Sphinx-Needs Official Docs",
-        "icon": {
-          "light": "utils/browser-light.svg",
-          "dark": "utils/browser-dark.svg"
-        }
+        "icon": "$(browser)"
+      },
+      {
+        "command": "sphinxNeedsExplorer.copyID",
+        "title": "Copy Need ID",
+        "icon": "$(briefcase)"
+      },
+      {
+        "command": "sphinxNeedsHelp.openUrl",
+        "title": "Open Url"
       }
     ],
     "menus": {
@@ -87,6 +107,18 @@
           "command": "sphinxNeedsExplorer.openSphinxNeedsOfficialDocs",
           "when": "view == sphinxNeedsExplorer",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "sphinxNeedsExplorer.gotoDef",
+          "when": "view == sphinxNeedsExplorer && viewItem == needID",
+          "group": "inline"
+        },
+        {
+          "command": "sphinxNeedsExplorer.copyID",
+          "when": "view == sphinxNeedsExplorer && viewItem == needID",
+          "group": "inline"
         }
       ]
     },
@@ -160,9 +192,9 @@
     "test": "npm run test-compile && node ./client/out/test/runTest.js",
     "watch": "tsc -b -w",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "lint": "gts lint ./client/src/extension.ts ./client/src/needsExplorer.ts ./server/src",
+    "lint": "gts lint ./client/src ./server/src",
     "clean": "gts clean && cd client && gts clean && cd ../server && gts clean && cd ..",
-    "fix-lint": "gts fix ./client/src/extension.ts  ./client/src/needsExplorer.ts ./server/src"
+    "fix-lint": "gts fix ./client/src ./server/src"
   },
   "devDependencies": {
     "@types/glob": "8.0.0",
