@@ -335,6 +335,7 @@ class NeedTree extends vscode.TreeItem {
 		}
 		this.tooltip = new vscode.MarkdownString(hoverContents, true);
 		this.tooltip.supportHtml = true;
+		this.description = this.title;
 	}
 
 	contextValue = 'needID';
