@@ -12,6 +12,11 @@ Under development
 * Added feature :ref:`find_references`.
 * Added :ref:`sphinxNeedsExplorer` of Sphinx-Needs needs objects.
 * Added setting :ref:`explorerOptions` to configure displayed need options at :ref:`sphinxNeedsExplorer`.
+* Added setting :ref:`explorerHoverOptioons` to configure displayed need options when hover over need ID 
+  at :ref:`sphinxNeedsExplorer`.
+* Added :ref:`sphinxNeedsViews` container on activity bar.
+* Added buttons, e.g. open NeedsJson, open Settings, and goto defintion, to improve :ref:`sphinxNeedsExplorer`.
+* Added :ref:`helpView` to display useful links about Sphinx-Needs and Sphinx-Needs-VsCode.
 
 0.1.1
 -----

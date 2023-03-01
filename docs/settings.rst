@@ -62,6 +62,20 @@ Example:
 
    "sphinx-needs.explorerOptions": ["type", "description"]
 
+.. _explorerHoverOptioons:
+
+``sphinx-needs.explorerItemHoverOptions``
+-----------------------------------------
+
+Specify **a list of comma seperated string of need options** to be displayed when hover over need ID at :ref:`sphinxNeedsExplorer`. Default is: ["tags"].
+
+Example:
+
+.. code-block:: json
+
+   "sphinx-needs.explorerItemHoverOptions": ["tags", "doctype"]
+
+
 Settings configuration
 ----------------------
 
