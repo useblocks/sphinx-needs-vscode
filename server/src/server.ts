@@ -23,6 +23,8 @@ import {
 
 import { DocumentUri, TextDocument } from 'vscode-languageserver-textdocument';
 
+import { TimeStampedLogger } from './logging';
+
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -38,6 +40,8 @@ let workspace_folder_uri: DocumentUri;
 let needs_info: NeedsTypesDocsInfo | undefined;
 let doc_src_dir: string;
 let needs_json_path: string;
+
+let tslogger: TimeStampedLogger;
 
 // Define type of Need, Needs, NeedsJsonObject, and NeedsTypesDocsInfo
 interface NeedsJsonObj {
@@ -129,7 +133,7 @@ connection.onInitialized(async () => {
 	}
 	if (hasWorkspaceFolderCapability) {
 		connection.workspace.onDidChangeWorkspaceFolders(() => {
-			connection.console.log('Workspace folder change event received.');
+			connection.console.info('Workspace folder change event received.');
 		});
 	}
 
@@ -152,7 +156,8 @@ async function get_wk_conf_settings() {
 		const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
 		const conf_needs_json_path = result.needsJson.replace('${workspaceFolder}', cal_wk_folder_uri);
 		const src_dir = result.srcDir.replace('${workspaceFolder}', cal_wk_folder_uri);
-		return [conf_needs_json_path, src_dir];
+		const loggingLevel: string = result.loggingLevel;
+		return [conf_needs_json_path, src_dir, loggingLevel];
 	};
 
 	// Get setting of needsJson: needs json path
@@ -167,10 +172,13 @@ async function get_wk_conf_settings() {
 	if (doc_src_dir === '') {
 		connection.window.showWarningMessage('Extension Sphinx-Needs: srcDir not configured.');
 	}
+
+	// Get setting of loggingLevel and init logger
+	const confLogLevel = conf_settings_loader(conf_settings)[2];
+	tslogger = new TimeStampedLogger(confLogLevel);
 }
 
 connection.onDidChangeConfiguration(async () => {
-	connection.console.log('Configuration changed.');
 	// Update workspace configuration settings
 	await get_wk_conf_settings();
 
@@ -180,13 +188,11 @@ connection.onDidChangeConfiguration(async () => {
 		needs_info = load_needs_info_from_json(needs_json_path);
 	}
 
-	connection.console.log('Worksapce settings updated.');
+	tslogger.info('Configuration changed.');
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
 	// Monitored files have change in VSCode
-	connection.console.log('We received an file change event');
-
 	// Check if needs json file is among the changed files
 	let needs_json_file_changes: FileEvent | undefined;
 	const changed_files = _change.changes;
@@ -202,17 +208,17 @@ connection.onDidChangeWatchedFiles((_change) => {
 		// Check file change type
 		if (needs_json_file_changes.type === 1) {
 			// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
-			connection.console.log('NeedsJson file created.');
+			tslogger.info('NeedsJson file created.');
 			// Update needs_info by reloading json file again
 			needs_info = load_needs_info_from_json(needs_json_path);
 		} else if (needs_json_file_changes.type === 3) {
-			connection.console.log('NeedsJson file got deleted or renmaed.');
+			tslogger.warn('NeedsJson file got deleted or renmaed.');
 			connection.window.showWarningMessage(
 				'Oops! NeedsJson file got deleted or renmaed. Please sync with configuration of sphinx-needs.needsJson.'
 			);
 		} else if (needs_json_file_changes.type === 2) {
 			// NeedsJson File content got updated
-			connection.console.log('NeedsJson file content update detected.');
+			tslogger.info('NeedsJson file content update detected.');
 
 			// Update needs_info by reloading json file again
 			needs_info = load_needs_info_from_json(needs_json_path);
@@ -225,7 +231,7 @@ function read_needs_json(given_needs_json_path: string) {
 	const needs_json_path = given_needs_json_path;
 
 	if (!fs.existsSync(needs_json_path)) {
-		connection.console.log(`Given needs.json not found: ${needs_json_path}`);
+		tslogger.error(`Given needs.json not found: ${needs_json_path}`);
 		connection.window.showWarningMessage(
 			`Given needsJson path: ${needs_json_path} not exists. No language features avaiable.`
 		);
@@ -237,7 +243,7 @@ function read_needs_json(given_needs_json_path: string) {
 		const needs_json: NeedsJsonObj = JSON.parse(data);
 		return needs_json;
 	} catch (err) {
-		connection.console.log(`Error reading NeedsJson: ${err}`);
+		tslogger.error(`Error reading NeedsJson: ${err}`);
 	}
 
 	return;
@@ -254,17 +260,15 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 	// Load needs from current version
 	const curr_version: string = needs_json.current_version;
 	if (!curr_version) {
-		connection.console.warn(
-			'Needs current_version is empty in needsJson! Specify version in conf.py would be nice!'
-		);
+		tslogger.warn('Needs current_version is empty in needsJson! Specify version in conf.py would be nice!');
 	}
 	// Check if versions are empty
 	if (!needs_json.versions) {
-		connection.console.error('Empty needs in needsJson!');
+		tslogger.error('Empty needs in needsJson!');
 		return undefined;
 	} else {
 		if (!(curr_version in needs_json.versions)) {
-			connection.console.error('Current version not found in versions from needsJson! Can not load needs!');
+			tslogger.error('Current version not found in versions from needsJson! Can not load needs!');
 			return undefined;
 		}
 	}
@@ -273,7 +277,7 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 
 	// Check needs not empty
 	if (Object.keys(needs).length === 0) {
-		connection.console.log('No needs found in given needsJson file.');
+		tslogger.warn('No needs found in given needsJson file.');
 		return undefined;
 	}
 
@@ -544,10 +548,10 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 	// The pass parameter contains the position of the text document in
 	// which code complete got requested.
 	if (!needs_info) {
-		connection.console.log('No needs info extracted from needs json. No completion feature.');
+		tslogger.warn('No needs info extracted from needs json. No completion feature.');
 		return [];
 	}
-	connection.console.log('Completion feature...');
+	tslogger.debug('Completion feature...');
 
 	const context_word = get_word(_textDocumentPosition);
 
@@ -605,11 +609,11 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 // Hover feature for Sphinx-Needs
 connection.onHover((_textDocumentPosition: TextDocumentPositionParams): Hover | null => {
 	if (!needs_info) {
-		connection.console.log('No needs info extracted from needs json. No Hover feature.');
+		tslogger.warn('No needs info extracted from needs json. No Hover feature.');
 		return null;
 	}
 
-	connection.console.log('Hover feature...');
+	tslogger.debug('Hover features...');
 
 	// Get need_id from hover context
 	const need_id = get_word(_textDocumentPosition);
@@ -632,11 +636,11 @@ connection.onHover((_textDocumentPosition: TextDocumentPositionParams): Hover | 
 
 function found_docs_srcdir(): boolean {
 	if (!doc_src_dir) {
-		connection.console.log('srcDir setting not configured.');
+		tslogger.warn('srcDir setting not configured.');
 		return false;
 	} else if (!fs.existsSync(doc_src_dir)) {
 		// Check if given srcDir exists
-		connection.console.log(`srcDir path not exists: ${doc_src_dir}`);
+		tslogger.error(`srcDir path not exists: ${doc_src_dir}`);
 		connection.window.showWarningMessage(`srcDir path not exists: ${doc_src_dir}`);
 		return false;
 	} else {
@@ -648,15 +652,15 @@ function found_docs_srcdir(): boolean {
 connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Definition | null => {
 	// Return location of definition of a need
 	if (!needs_info) {
-		connection.console.log('No needs info extracted from needs json. No Goto Definition feature.');
+		tslogger.warn('No needs info extracted from needs json. No Goto Definition feature.');
 		return null;
 	}
 
 	// Check if srcDir configured and exists
 	if (found_docs_srcdir()) {
-		connection.console.log('Goto Definition...');
+		tslogger.debug('Goto Definition...');
 	} else {
-		connection.console.log('srcDir not configured or path not exists. No Goto Definition');
+		tslogger.warn('srcDir not configured or path not exists. No Goto Definition');
 		return null;
 	}
 
@@ -692,15 +696,15 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
 // Find references for Sphinx-Needs
 connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Location[] | null => {
 	if (!needs_info) {
-		connection.console.log('No needs info extracted from needs json. No Find references feature.');
+		tslogger.warn('No needs info extracted from needs json. No Find references feature.');
 		return null;
 	}
 
 	// Check if srcDir configured and exists
 	if (found_docs_srcdir()) {
-		connection.console.log('Find References...');
+		tslogger.debug('Find References...');
 	} else {
-		connection.console.log('srcDir not configured or path not exists. No Find References');
+		tslogger.warn('srcDir not configured or path not exists. No Find References');
 		return null;
 	}
 
@@ -776,7 +780,7 @@ function find_directive_location(doc_content_lines: string[], curr_need: Need): 
 			line.indexOf(id_pattern) !== -1;
 		})
 	) {
-		connection.console.log(`No defintion found of ${curr_need.id}.`);
+		tslogger.warn(`No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_id_line_idx = doc_content_lines.findIndex((line) => line.indexOf(id_pattern) !== -1);
@@ -791,7 +795,7 @@ function find_directive_location(doc_content_lines: string[], curr_need: Need): 
 			line.indexOf(directive_pattern) !== -1;
 		})
 	) {
-		connection.console.log(`No defintion found of ${curr_need.id}.`);
+		tslogger.warn(`No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_reverse_directive_line_idx = new_doc_content_lines
@@ -818,7 +822,7 @@ function read_doc_content(doc_path: string): string[] | null {
 		const doc_content_lines = doc_content.split('\n');
 		return doc_content_lines;
 	} catch (err) {
-		connection.console.log(`Error read docoment: ${err}`);
+		tslogger.error(`Error read docoment: ${err}`);
 	}
 	return null;
 }

@@ -16,7 +16,7 @@ import {
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
-	console.log('Activated Sphinx-Needs-VsCode Extension.');
+	console.info('Activated Sphinx-Needs-VsCode Extension.');
 
 	// TreeView of Sphinx-Needs Objects
 	const needsExplorerProvider = new NeedsExplorerProvider();
