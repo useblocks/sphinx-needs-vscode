@@ -1,10 +1,15 @@
 Changelog
 =========
 
-0.2.0
+0.2.1
 -----
 
 Under development
+
+0.2.0
+-----
+
+Released: 10.03.2023
 
 * Updated homepage for extension
 * Adapted extension ``activationEvents`` to workspace contains ``conf.py``.
