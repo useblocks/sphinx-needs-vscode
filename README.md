@@ -49,6 +49,6 @@ hover.
 
 ## User Interface
 
-**Sphinx-Needs Explorer:**
+**Sphinx-Needs Views:**
 
-![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/sn-explorer.gif)
+![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/sn-views.gif)
