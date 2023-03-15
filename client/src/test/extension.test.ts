@@ -64,7 +64,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 		// ->req>index.rst>
 		const expectedNeedPathLev3: vscode.CompletionList = {
 			items: [
-				{ label: 'REQ_1', insertText: 'REQ_1', detail: 'example req', documentation: 'Description for REQ_1.' }
+				{ label: 'REQ_1', insertText: 'REQ_1', detail: 'First requirement', documentation: 'Requirement content of REQ_1.' }
 			]
 		};
 
@@ -155,7 +155,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 
 		// Create test cases with expected results
 		const testCases: [string, vscode.Position, string][] = [
-			['inside needID', new vscode.Position(11, 10), 'Description for REQ_1'],
+			['inside needID', new vscode.Position(11, 10), 'Requirement content of REQ_1.'],
 			['inside non needID', new vscode.Position(6, 3), '']
 		];
 
@@ -211,7 +211,19 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
 				new vscode.Position(9, 0)
 			],
-			['negative goto', new vscode.Position(6, 3), '', new vscode.Position(0, 0)]
+			['negative goto', new vscode.Position(6, 3), '', new vscode.Position(0, 0)],
+			[
+				'goto definition for nested child need',
+				new vscode.Position(36, 18),
+				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				new vscode.Position(23, 0)
+			],
+			[
+				'goto definition for nested grand child need',
+				new vscode.Position(36, 26),
+				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				new vscode.Position(41, 0)
+			],
 		];
 
 		const promises = testCases.map(async ([name, position, expectedDoc, expectedPos]) => {
@@ -317,7 +329,7 @@ suite('Sphinx-Needs Extension Tests for plaintext file', function () {
 
 		// Create test cases with expected results
 		const testCases: [string, vscode.Position, string][] = [
-			['inside needID', new vscode.Position(3, 2), 'Description for REQ_3'],
+			['inside needID', new vscode.Position(3, 2), 'Requirement content of REQ_3.'],
 			['inside non needID', new vscode.Position(11, 3), '']
 		];
 

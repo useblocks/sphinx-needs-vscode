@@ -72,6 +72,7 @@ interface Need {
 	type: string;
 	links: string[];
 	bkLinks: string[];
+	parent_need: string;
 }
 
 interface NeedsTypesDocsInfo {
@@ -279,6 +280,25 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 	if (Object.keys(needs).length === 0) {
 		tslogger.warn('No needs found in given needsJson file.');
 		return undefined;
+	}
+
+	// Check and calculate doctype for nested needs
+	for (const need of Object.values(needs)) {
+		let temp_parent_id: string;
+		let temp_parent: Need;
+		// Get child need
+		if (!need['doctype'] && need['parent_need']) {
+			// search up to top parent need to get info of doctype
+			temp_parent_id = need['parent_need'];
+			temp_parent = needs[temp_parent_id];
+			while (temp_parent['parent_need']) {
+				if (!temp_parent['parent_need']) {
+					break;
+				}
+				temp_parent = needs[temp_parent['parent_need']];
+			}
+			need['doctype'] = temp_parent['doctype'];
+		}
 	}
 
 	// Initialize needs_types_docs_info
