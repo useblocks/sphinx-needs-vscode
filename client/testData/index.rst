@@ -15,7 +15,7 @@ Needs
          REQ_3, REQ_2
    :tests: REQ_2
 
-   Requirement content
+   Requirement content of REQ_1.
 
 
 .. spec:: First specification
@@ -24,17 +24,17 @@ Needs
    :links: REQ_3
    :tests: REQ_2
 
-   Specification content
+   Specification content of SPEC_1.
 
 .. spec:: Dummy Title
    :id: SPEC_3
    :status: open
 
-   Content.
+   Content of SPEC_3.
 
 :need:`REQ_1`
 
-REQ_2, SPEC_1
+REQ_2, SPEC_1, REQ_10, REQ_25
 
 :need:`->`
 

@@ -17,6 +17,7 @@ interface Need {
 	status: string;
 	title: string;
 	type: string;
+	parent_need: string;
 }
 
 interface SNVConfig {
@@ -240,6 +241,24 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			// Get needs objects from current_version
 			const curr_version: string = needsJson['current_version'];
 			this.needsObjects = needsJson['versions'][curr_version]['needs'];
+			// Check and get doctype for nested child needs
+			for (const need of Object.values(this.needsObjects)) {
+				let temp_parent_id: string;
+				let temp_parent: Need;
+				// Get child need
+				if (!need['doctype'] && need['parent_need']) {
+					// search up to top parent need to get info of doctype
+					temp_parent_id = need['parent_need'];
+					temp_parent = this.needsObjects[temp_parent_id];
+					while (temp_parent['parent_need']) {
+						if (!temp_parent['parent_need']) {
+							break;
+						}
+						temp_parent = this.needsObjects[temp_parent['parent_need']];
+					}
+					need['doctype'] = temp_parent['doctype'];
+				}
+			}
 		} else {
 			this.needsObjects = {};
 		}

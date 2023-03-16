@@ -6,6 +6,8 @@ Changelog
 
 Under development
 
+* Support goto definition for nested needs.
+
 0.2.0
 -----
 
