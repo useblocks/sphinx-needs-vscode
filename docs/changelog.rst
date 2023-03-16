@@ -1,10 +1,15 @@
 Changelog
 =========
 
-0.2.1
+0.2.2
 -----
 
 Under development
+
+0.2.1
+-----
+
+Released: 16.03.2023
 
 * Support goto definition for nested needs.
 
