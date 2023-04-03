@@ -1,10 +1,12 @@
 Changelog
 =========
 
-0.2.2
+0.3.0
 -----
 
 Under development
+
+* Added setting :ref:`multiDocs` to support multiple docs inside one workspace, see :ref:`advanced`.
 
 0.2.1
 -----
