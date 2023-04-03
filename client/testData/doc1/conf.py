@@ -17,9 +17,10 @@
 
 # -- Project information -----------------------------------------------------
 
-project = "Test Env"
-copyright = "2022, open-needs community"
-author = "open-needs community"
+project = "Sphinx-Needs-VsCode Test Doc1"
+copyright = "2023, Sphinx-Needs-VsCode"
+author = "Teams Sphinx-Needs-VsCode"
+version = "1.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -28,6 +29,11 @@ author = "open-needs community"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ["sphinx_needs"]
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'restructuredtext',
+}
 
 needs_types = [
     {"directive": "req", "title": "Requirement", "prefix": "R_", "color": "#BFD8D2", "style": "node"},

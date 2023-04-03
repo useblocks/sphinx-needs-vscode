@@ -23,7 +23,7 @@ import {
 
 import { DocumentUri, TextDocument } from 'vscode-languageserver-textdocument';
 
-import { TimeStampedLogger } from './logging';
+import { LogLevel, TimeStampedLogger } from './logging';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -37,9 +37,10 @@ let hasWorkspaceFolderCapability = false;
 
 let workspace_folder_uri: DocumentUri;
 
-let needs_info: NeedsTypesDocsInfo | undefined;
-let doc_src_dir: string;
-let needs_json_path: string;
+let needs_infos: NeedsInfos;
+let isMultiDocs = false;
+let multiToNone = false;
+let wsConfigs: WsConfigs;
 
 let tslogger: TimeStampedLogger;
 
@@ -84,6 +85,24 @@ interface NeedsTypesDocsInfo {
 	needs_per_doc: {
 		[doc: string]: Need[];
 	};
+	src_dir: string;
+	all_files_abs_paths: string[];
+}
+
+interface NeedsInfos {
+	[path: string]: NeedsTypesDocsInfo | undefined;
+}
+
+interface DocConf {
+	needsJson: string;
+	srcDir: string;
+}
+
+interface WsConfigs {
+	needsJson: string;
+	srcDir: string;
+	folders: DocConf[];
+	loggingLevel: LogLevel;
 }
 
 connection.onInitialize((params: InitializeParams) => {
@@ -138,58 +157,165 @@ connection.onInitialized(async () => {
 		});
 	}
 
-	// Get workspace configuration settings of needsJson and srcDir
-	await get_wk_conf_settings();
+	// Get relevant workspace configuration settings
+	wsConfigs = await get_wk_conf_settings();
 
-	// Extract needs info from given needs json path
-	if (needs_json_path === '') {
-		needs_info = undefined;
-	} else {
-		needs_info = load_needs_info_from_json(needs_json_path);
-	}
+	// Initial logger
+	tslogger = new TimeStampedLogger(wsConfigs.loggingLevel);
+
+	// Check and load all needsJson from workspace configurations
+	needs_infos = load_all_needs_json(wsConfigs);
 });
 
-// Get and update workspace settings
+// Load all needsJson
+function load_all_needs_json(configs: WsConfigs) {
+	// Check workspace configurations
+	check_wk_confs(configs);
+
+	const all_needs_infos: NeedsInfos = {};
+	// load sphinx-needs.folders
+	configs.folders.forEach((fd) => {
+		if (!(fd.needsJson in all_needs_infos)) {
+			all_needs_infos[fd.needsJson] = load_needs_info_from_json(fd.needsJson);
+		} else {
+			connection.window.showWarningMessage('SNV: Duplicate needsJson config in sphinx-needs.folders');
+		}
+	});
+	// load sphinx-needs.needsJson
+	if (configs.needsJson && configs.srcDir && !(configs.needsJson in all_needs_infos)) {
+		all_needs_infos[configs.needsJson] = load_needs_info_from_json(configs.needsJson);
+	}
+	return all_needs_infos;
+}
+
+// Check workspace configuration settings
+function check_wk_confs(configs: WsConfigs) {
+	if (configs) {
+		// Check if sphinx-needs.needsJson empty and exists
+		if (configs.needsJson === '') {
+			connection.window.showWarningMessage('SNV: sphinx-needs.needsJson path not configured.');
+		} else if (!fs.existsSync(configs.needsJson)) {
+			tslogger.error(`SNV: Given sphinx-needs.needsJson path not exists: ${configs.needsJson}`);
+			connection.window.showWarningMessage(
+				`SNV: Given sphinx-needs.needsJson path: ${configs.needsJson} not exists.`
+			);
+		}
+		// Check if sphinx-needs.srcDir empty and exists
+		if (configs.srcDir === '') {
+			connection.window.showWarningMessage('SNV: sphinx-needs.srcDir not configured.');
+		} else if (!fs.existsSync(configs.srcDir)) {
+			tslogger.error(`SNV: Given sphinx-needs.srcDir path not exists: ${configs.srcDir}`);
+			connection.window.showWarningMessage(`SNV: Given sphinx-needs.srcDir path: ${configs.srcDir} not exists.`);
+		}
+		// Check if needsJson and srcDir in sphinx-needs.folders empty and exist
+		if (configs.folders.length <= 0) {
+			tslogger.debug('SNV: sphinx-needs.folders empty');
+			isMultiDocs = false;
+		} else {
+			configs.folders.forEach((folder) => {
+				if (folder.needsJson === '') {
+					connection.window.showWarningMessage('SNV: needsJson path in sphinx-needs.folders is empty.');
+				} else if (!fs.existsSync(folder.needsJson)) {
+					tslogger.error(`SNV: Given sphinx-needs.folders needsJson path not exists: ${folder.needsJson}`);
+					connection.window.showWarningMessage(
+						`SNV: Given sphinx-needs.folders needsJson path: ${folder.needsJson} not exists.`
+					);
+				}
+				if (folder.srcDir === '') {
+					connection.window.showWarningMessage('SNV: srcDir path in sphinx-needs.folders is empty.');
+				} else if (!fs.existsSync(folder.srcDir)) {
+					tslogger.error(`SNV: Given sphinx-needs.folders srcDir path not exists: ${folder.srcDir}`);
+					connection.window.showWarningMessage(
+						`SNV: Given sphinx-needs.folders srcDir path: ${folder.srcDir} not exists.`
+					);
+				}
+			});
+			isMultiDocs = true;
+		}
+	}
+}
+
+// Get workspace settings
 async function get_wk_conf_settings() {
-	// Get configuration settings
-	const conf_settings = await connection.workspace.getConfiguration('sphinx-needs');
-	const conf_settings_loader = (result: any) => {
-		const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
-		const conf_needs_json_path = result.needsJson.replace('${workspaceFolder}', cal_wk_folder_uri);
-		const src_dir = result.srcDir.replace('${workspaceFolder}', cal_wk_folder_uri);
-		const loggingLevel: string = result.loggingLevel;
-		return [conf_needs_json_path, src_dir, loggingLevel];
+	const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
+
+	// Get configuration of sphinx-needs.needsJson
+	let needs_json_path = '';
+	await connection.workspace.getConfiguration('sphinx-needs.needsJson').then((value) => {
+		needs_json_path = value.replace('${workspaceFolder}', cal_wk_folder_uri);
+	});
+
+	// Get configuration of sphinx-needs.srcDir
+	let doc_src_dir = '';
+	await connection.workspace.getConfiguration('sphinx-needs.srcDir').then((value) => {
+		doc_src_dir = value.replace('${workspaceFolder}', cal_wk_folder_uri);
+	});
+
+	// Get configuration of sphinx-needs.loggingLevel
+	let confLogLevel: LogLevel = 'warn';
+	await connection.workspace.getConfiguration('sphinx-needs.loggingLevel').then((value) => {
+		confLogLevel = value;
+	});
+
+	// Get configuration of sphinx-needs.folders
+	const wk_folders: DocConf[] = [];
+	await connection.workspace.getConfiguration('sphinx-needs.folders').then((value) => {
+		value.forEach((conf: DocConf) => {
+			wk_folders.push({
+				needsJson: conf.needsJson.replace('${workspaceFolder}', cal_wk_folder_uri),
+				srcDir: conf.srcDir.replace('${workspaceFolder}', cal_wk_folder_uri)
+			});
+		});
+	});
+
+	const configs: WsConfigs = {
+		needsJson: needs_json_path,
+		srcDir: doc_src_dir,
+		folders: wk_folders,
+		loggingLevel: confLogLevel
 	};
-
-	// Get setting of needsJson: needs json path
-	needs_json_path = conf_settings_loader(conf_settings)[0];
-	// Check if given needs json path empty
-	if (needs_json_path === '') {
-		connection.window.showWarningMessage('Extension Sphinx-Needs: needs json path not configured.');
-	}
-
-	// Get setting of srcDir: current docs source directory for sphinx-needs project
-	doc_src_dir = conf_settings_loader(conf_settings)[1];
-	if (doc_src_dir === '') {
-		connection.window.showWarningMessage('Extension Sphinx-Needs: srcDir not configured.');
-	}
-
-	// Get setting of loggingLevel and init logger
-	const confLogLevel = conf_settings_loader(conf_settings)[2];
-	tslogger = new TimeStampedLogger(confLogLevel);
+	return configs;
 }
 
 connection.onDidChangeConfiguration(async () => {
 	// Update workspace configuration settings
-	await get_wk_conf_settings();
+	const newConfigs = await get_wk_conf_settings();
 
-	if (needs_json_path === '') {
-		needs_info = undefined;
-	} else {
-		needs_info = load_needs_info_from_json(needs_json_path);
+	// Check if sphinx-needs.loggingLevel changed
+	if (newConfigs.loggingLevel !== wsConfigs.loggingLevel) {
+		// Update loggingLevel and logger
+		wsConfigs.loggingLevel = newConfigs.loggingLevel;
+		tslogger = new TimeStampedLogger(wsConfigs.loggingLevel);
 	}
 
-	tslogger.info('Configuration changed.');
+	let reloadNeedsJson = false;
+	// Check if sphinx-needs.needsJson changed
+	if (newConfigs.needsJson !== wsConfigs.needsJson) {
+		// Update wsConfigs.needsJson
+		wsConfigs.needsJson = newConfigs.needsJson;
+		reloadNeedsJson = true;
+	}
+
+	// Check if sphinx-needs.srcDir changed
+	if (newConfigs.srcDir !== wsConfigs.srcDir) {
+		wsConfigs.srcDir = newConfigs.srcDir;
+		reloadNeedsJson = true;
+	}
+
+	// Check if sphinx-needs.folders changed
+	if (newConfigs.folders !== wsConfigs.folders) {
+		wsConfigs.folders = newConfigs.folders;
+		if (wsConfigs.folders.length <= 0) {
+			multiToNone = true;
+		}
+		reloadNeedsJson = true;
+	}
+
+	if (reloadNeedsJson) {
+		needs_infos = load_all_needs_json(wsConfigs);
+	}
+
+	tslogger.info('SNV: Configuration changed.');
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
@@ -199,30 +325,28 @@ connection.onDidChangeWatchedFiles((_change) => {
 	const changed_files = _change.changes;
 	changed_files.forEach((changed_file) => {
 		const changed_file_uri = changed_file.uri.replace('file://', '');
-		if (changed_file_uri === needs_json_path) {
+		if (Object.keys(needs_infos).indexOf(changed_file_uri) >= 0) {
 			needs_json_file_changes = changed_file;
 		}
 	});
 
 	// Needs Json file changed
 	if (needs_json_file_changes) {
+		const changed_needs_json = needs_json_file_changes.uri.replace('file://', '');
 		// Check file change type
 		if (needs_json_file_changes.type === 1) {
 			// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
-			tslogger.info('NeedsJson file created.');
+			tslogger.info('SNV: NeedsJson file created.');
 			// Update needs_info by reloading json file again
-			needs_info = load_needs_info_from_json(needs_json_path);
+			needs_infos[changed_needs_json] = load_needs_info_from_json(changed_needs_json);
 		} else if (needs_json_file_changes.type === 3) {
-			tslogger.warn('NeedsJson file got deleted or renmaed.');
-			connection.window.showWarningMessage(
-				'Oops! NeedsJson file got deleted or renmaed. Please sync with configuration of sphinx-needs.needsJson.'
-			);
+			tslogger.warn('SNV: NeedsJson file got deleted or renmaed.');
+			connection.window.showWarningMessage('SNV: NeedsJson file got deleted or renmaed.');
 		} else if (needs_json_file_changes.type === 2) {
 			// NeedsJson File content got updated
-			tslogger.info('NeedsJson file content update detected.');
-
+			tslogger.info('SNV: NeedsJson file content update detected.');
 			// Update needs_info by reloading json file again
-			needs_info = load_needs_info_from_json(needs_json_path);
+			needs_infos[changed_needs_json] = load_needs_info_from_json(changed_needs_json);
 		}
 	}
 });
@@ -232,10 +356,6 @@ function read_needs_json(given_needs_json_path: string) {
 	const needs_json_path = given_needs_json_path;
 
 	if (!fs.existsSync(needs_json_path)) {
-		tslogger.error(`Given needs.json not found: ${needs_json_path}`);
-		connection.window.showWarningMessage(
-			`Given needsJson path: ${needs_json_path} not exists. No language features avaiable.`
-		);
 		return;
 	}
 
@@ -244,7 +364,7 @@ function read_needs_json(given_needs_json_path: string) {
 		const needs_json: NeedsJsonObj = JSON.parse(data);
 		return needs_json;
 	} catch (err) {
-		tslogger.error(`Error reading NeedsJson: ${err}`);
+		tslogger.error(`SNV: Error reading NeedsJson: ${err}`);
 	}
 
 	return;
@@ -261,15 +381,15 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 	// Load needs from current version
 	const curr_version: string = needs_json.current_version;
 	if (!curr_version) {
-		tslogger.warn('Needs current_version is empty in needsJson! Specify version in conf.py would be nice!');
+		tslogger.warn('SNV: Needs current_version is empty in needsJson! Specify version in conf.py would be nice!');
 	}
 	// Check if versions are empty
 	if (!needs_json.versions) {
-		tslogger.error('Empty needs in needsJson!');
+		tslogger.error('SNV: Empty needs in needsJson!');
 		return undefined;
 	} else {
 		if (!(curr_version in needs_json.versions)) {
-			tslogger.error('Current version not found in versions from needsJson! Can not load needs!');
+			tslogger.error('SNV: Current version not found in versions from needsJson! Can not load needs!');
 			return undefined;
 		}
 	}
@@ -278,7 +398,7 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 
 	// Check needs not empty
 	if (Object.keys(needs).length === 0) {
-		tslogger.warn('No needs found in given needsJson file.');
+		tslogger.warn('SNV: No needs found in given needsJson file.');
 		return undefined;
 	}
 
@@ -301,12 +421,29 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 		}
 	}
 
+	// Get current srcDir
+	let curr_src_dir = '';
+	if (wsConfigs.needsJson === given_needs_json_path) {
+		curr_src_dir = wsConfigs.srcDir;
+	} else {
+		wsConfigs.folders.forEach((conf) => {
+			if (conf.needsJson === given_needs_json_path) {
+				curr_src_dir = conf.srcDir;
+			}
+		});
+	}
+	if (!curr_src_dir.endsWith('/')) {
+		curr_src_dir = curr_src_dir + '/';
+	}
+
 	// Initialize needs_types_docs_info
 	const needs_types_docs_info: NeedsTypesDocsInfo = {
 		needs: needs,
 		needs_types: [],
 		docs_per_type: {},
-		needs_per_doc: {}
+		needs_per_doc: {},
+		src_dir: curr_src_dir,
+		all_files_abs_paths: []
 	};
 
 	// Get need types, docs_per_type, and needs_per_doc
@@ -351,6 +488,11 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 			});
 		}
 	}
+
+	// Calulcate all files full paths in current srcDir
+	Object.keys(needs_types_docs_info.needs_per_doc).forEach((fp) => {
+		needs_types_docs_info.all_files_abs_paths.push(curr_src_dir + fp);
+	});
 
 	return needs_types_docs_info;
 }
@@ -567,24 +709,27 @@ function complete_path_to_need_id(
 connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
 	// The pass parameter contains the position of the text document in
 	// which code complete got requested.
-	if (!needs_info) {
-		tslogger.warn('No needs info extracted from needs json. No completion feature.');
+
+	// Get current needs info
+	const curr_needs_info = get_curr_needs_info(_textDocumentPosition);
+	if (!curr_needs_info) {
+		tslogger.warn('SNV: No needs info extracted from needs json. No completion feature.');
 		return [];
 	}
-	tslogger.debug('Completion feature...');
+	tslogger.debug('SNV: Completion feature...');
 
 	const context_word = get_word(_textDocumentPosition);
 
 	// if word starts with '->' or ':need:->', provide completion suggestion path from need type to need ID, e.g. need_type > doc_name > need_id
 	if (context_word.startsWith('->') || context_word.startsWith(':need:`->')) {
-		return complete_path_to_need_id(_textDocumentPosition, context_word, needs_info);
+		return complete_path_to_need_id(_textDocumentPosition, context_word, curr_needs_info);
 	}
 
 	// if word starts with '..', provide completion suggestion for directive snippets
 	if (context_word.startsWith('..')) {
 		// Return a list of suggestion of directive of different types
 		const directive_items: CompletionItem[] = [];
-		needs_info.needs_types.forEach((need_type) => {
+		curr_needs_info.needs_types.forEach((need_type) => {
 			const text = [` ${need_type}:: Dummy Title`, '\t:id: NeedID', '\t:status: open\n', '\tContent.'].join('\n');
 			directive_items.push({
 				label: `.. ${need_type}::`,
@@ -626,73 +771,76 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 	return item;
 });
 
+function get_curr_needs_info(params: TextDocumentPositionParams): NeedsTypesDocsInfo | undefined {
+	if (!multiToNone && !isMultiDocs) {
+		return needs_infos[wsConfigs.needsJson];
+	} else {
+		// Get current document file path
+		const curr_doc_uri = params.textDocument.uri.replace('file://', '');
+		// Check and determine which needsJson infos to use
+		for (const [need_json, need_info] of Object.entries(needs_infos)) {
+			if (need_info?.all_files_abs_paths && need_info.all_files_abs_paths.indexOf(curr_doc_uri) >= 0) {
+				return needs_infos[need_json];
+			}
+		}
+	}
+}
+
 // Hover feature for Sphinx-Needs
 connection.onHover((_textDocumentPosition: TextDocumentPositionParams): Hover | null => {
-	if (!needs_info) {
-		tslogger.warn('No needs info extracted from needs json. No Hover feature.');
+	// Get current needs info
+	const curr_needs_info = get_curr_needs_info(_textDocumentPosition);
+
+	// Check if current needs info exists
+	if (!curr_needs_info) {
+		tslogger.warn('SNV: No needs info extracted from needs json. No Hover feature.');
 		return null;
 	}
 
-	tslogger.debug('Hover features...');
-
+	tslogger.debug('SNV: Hover features...');
 	// Get need_id from hover context
 	const need_id = get_word(_textDocumentPosition);
-
 	// Check if need_id exists
-	if (!need_id || !(need_id in needs_info.needs)) {
+	if (!need_id || !(need_id in curr_needs_info.needs)) {
 		return null;
 	}
-
-	const title = needs_info.needs[need_id].title;
-	const description = needs_info.needs[need_id].description;
-
+	const curr_title = curr_needs_info.needs[need_id].title;
+	const curr_description = curr_needs_info.needs[need_id].description;
 	return {
 		contents: {
 			kind: MarkupKind.Markdown,
-			value: [`**${title}**`, '', '', '```', `${description}`, '```'].join('\n')
+			value: [`**${curr_title}**`, '', '', '```', `${curr_description}`, '```'].join('\n')
 		}
 	};
 });
 
-function found_docs_srcdir(): boolean {
-	if (!doc_src_dir) {
-		tslogger.warn('srcDir setting not configured.');
-		return false;
-	} else if (!fs.existsSync(doc_src_dir)) {
-		// Check if given srcDir exists
-		tslogger.error(`srcDir path not exists: ${doc_src_dir}`);
-		connection.window.showWarningMessage(`srcDir path not exists: ${doc_src_dir}`);
-		return false;
-	} else {
-		return true;
-	}
-}
-
 // Goto definition for Sphinx-Needs
 connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Definition | null => {
-	// Return location of definition of a need
-	if (!needs_info) {
-		tslogger.warn('No needs info extracted from needs json. No Goto Definition feature.');
+	// Get current needs info
+	const curr_needs_info = get_curr_needs_info(_textDocumentPosition);
+	// Check if current needs info exists
+	if (!curr_needs_info) {
+		tslogger.warn('SNV: No needs info extracted from needs json. No Goto Definition feature.');
 		return null;
 	}
 
-	// Check if srcDir configured and exists
-	if (found_docs_srcdir()) {
-		tslogger.debug('Goto Definition...');
+	// Check if srcDir path exists
+	if (fs.existsSync(curr_needs_info.src_dir)) {
+		tslogger.debug('SNV: Goto Definition...');
 	} else {
-		tslogger.warn('srcDir not configured or path not exists. No Goto Definition');
+		tslogger.warn('SNV: srcDir path not exists. No Goto Definition');
 		return null;
 	}
 
 	// Check current context is actually a need
 	const need_id = get_word(_textDocumentPosition);
-	if (!need_id || !(need_id in needs_info.needs)) {
+	if (!need_id || !(need_id in curr_needs_info.needs)) {
 		return null;
 	}
 
 	// Get the doc path of the need
-	const curr_need: Need = needs_info.needs[need_id];
-	const doc_path = get_doc_path(curr_need);
+	const curr_need: Need = curr_needs_info.needs[need_id];
+	const doc_path = curr_needs_info.src_dir + curr_need.docname + curr_need.doctype;
 	// Read the document contents
 	const doc_contents = read_doc_content(doc_path);
 	if (!doc_contents) {
@@ -715,34 +863,36 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
 
 // Find references for Sphinx-Needs
 connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Location[] | null => {
-	if (!needs_info) {
-		tslogger.warn('No needs info extracted from needs json. No Find references feature.');
+	// Get current needs info
+	const curr_needs_info = get_curr_needs_info(_textDocumentPosition);
+	if (!curr_needs_info) {
+		tslogger.warn('SNV: No needs info extracted from needs json. No Find references feature.');
 		return null;
 	}
 
-	// Check if srcDir configured and exists
-	if (found_docs_srcdir()) {
-		tslogger.debug('Find References...');
+	// Check if srcDir path exists
+	if (fs.existsSync(curr_needs_info.src_dir)) {
+		tslogger.debug('SNV: Find References...');
 	} else {
-		tslogger.warn('srcDir not configured or path not exists. No Find References');
+		tslogger.warn('SNV: srcDir path not exists. No Find References');
 		return null;
 	}
 
 	// Check current context is actually a need
 	const need_id = get_word(_textDocumentPosition);
-	if (!need_id || !(need_id in needs_info.needs)) {
+	if (!need_id || !(need_id in curr_needs_info.needs)) {
 		return null;
 	}
 
 	// Get the doc path of the need
-	const curr_need: Need = needs_info.needs[need_id];
+	const curr_need: Need = curr_needs_info.needs[need_id];
 
 	const locations: Location[] = [];
 	if (curr_need.bkLinks) {
 		curr_need.bkLinks.forEach((link_id) => {
-			if (needs_info) {
-				const link_need: Need = needs_info.needs[link_id];
-				const doc_path = get_doc_path(link_need);
+			if (curr_needs_info) {
+				const link_need: Need = curr_needs_info.needs[link_id];
+				const doc_path = curr_needs_info.src_dir + link_need.docname + link_need.doctype;
 				// Read the document contents
 				const doc_contents = read_doc_content(doc_path);
 				if (!doc_contents) {
@@ -753,10 +903,6 @@ connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Loc
 				if (!need_directive_location) {
 					return null;
 				}
-				// // Find starting index of need ID
-				// const startPosID = doc_contents[need_directive_location + 1].indexOf(link_id);
-				// const endPosID = startPosID + link_id.length
-
 				// Find options link ID line index
 				const link_id_pattern = `${need_id}`;
 				const options_lines_contents = doc_contents.slice(need_directive_location);
@@ -800,7 +946,7 @@ function find_directive_location(doc_content_lines: string[], curr_need: Need): 
 			line.indexOf(id_pattern) !== -1;
 		})
 	) {
-		tslogger.warn(`No defintion found of ${curr_need.id}.`);
+		tslogger.warn(`SNV: No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_id_line_idx = doc_content_lines.findIndex((line) => line.indexOf(id_pattern) !== -1);
@@ -815,7 +961,7 @@ function find_directive_location(doc_content_lines: string[], curr_need: Need): 
 			line.indexOf(directive_pattern) !== -1;
 		})
 	) {
-		tslogger.warn(`No defintion found of ${curr_need.id}.`);
+		tslogger.warn(`SNV: No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_reverse_directive_line_idx = new_doc_content_lines
@@ -825,24 +971,13 @@ function find_directive_location(doc_content_lines: string[], curr_need: Need): 
 	return found_directive_line_idx;
 }
 
-function get_doc_path(curr_need: Need): string {
-	let conf_py_path: string;
-	if (doc_src_dir.endsWith('/')) {
-		conf_py_path = doc_src_dir;
-	} else {
-		conf_py_path = doc_src_dir + '/';
-	}
-	const doc_path = conf_py_path + curr_need.docname + curr_need.doctype;
-	return doc_path;
-}
-
 function read_doc_content(doc_path: string): string[] | null {
 	try {
 		const doc_content: string = fs.readFileSync(doc_path, 'utf8');
 		const doc_content_lines = doc_content.split('\n');
 		return doc_content_lines;
 	} catch (err) {
-		tslogger.error(`Error read docoment: ${err}`);
+		tslogger.error(`SNV: Error read docoment: ${err}`);
 	}
 	return null;
 }

@@ -149,6 +149,23 @@
           "default": "",
           "description": "Sphinx-Needs docs source directory."
         },
+        "sphinx-needs.folders": {
+          "type":"array",
+          "scope": "resource",
+          "items": {
+            "type": "object",
+            "properties": {
+              "needsJson": {
+                "type":"string"
+              },
+              "srcDir": {
+                "type":"string"
+              }
+            }
+          },
+          "default": [],
+          "description": "Specify needsJson and srcDir path for multiple Sphinx-Needs docs under one workspace."
+        },
         "sphinx-needs.activateFiles": {
           "type": "array",
           "scope": "resource",

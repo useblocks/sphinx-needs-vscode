@@ -1,0 +1,20 @@
+Test Document of plaintext
+==========================
+
+REQ_3
+
+REQ_1
+
+SPEC_1
+
+..
+
+:need:`->req>`
+
+.. spec:: 100 specification of doc1
+   :id: SPEC_100
+   :status: open
+   :links: REQ_3
+   :tests: REQ_2
+
+   Specification content of SPEC_100.

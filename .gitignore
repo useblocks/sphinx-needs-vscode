@@ -6,7 +6,7 @@ client/node_modules
 server/out
 server/node_modules
 
-client/testData/_build
+client/testData/**/_build
 docs/_build
 .venv/
 .envrc

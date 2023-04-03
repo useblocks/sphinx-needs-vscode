@@ -15,7 +15,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 	});
 
 	// Test Document
-	const doc_path = path.resolve(__dirname, '../../testData', 'index.rst');
+	const doc_path = path.resolve(__dirname, '../../testData/doc1', 'index.rst');
 	const docUri = vscode.Uri.file(doc_path);
 
 	// Test completion
@@ -64,7 +64,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 		// ->req>index.rst>
 		const expectedNeedPathLev3: vscode.CompletionList = {
 			items: [
-				{ label: 'REQ_1', insertText: 'REQ_1', detail: 'First requirement', documentation: 'Requirement content of REQ_1.' }
+				{ label: 'REQ_1', insertText: 'REQ_1', detail: 'First requirement of doc1', documentation: 'Requirement content of REQ_1.' }
 			]
 		};
 
@@ -189,7 +189,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 			[
 				'goto different file',
 				new vscode.Position(36, 1),
-				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				path.resolve(__dirname, '../../testData/doc1/mySubFolder', 'sub.rst'),
 				new vscode.Position(3, 0)
 			],
 			['goto multiple ID same line', new vscode.Position(36, 10), docUri.path, new vscode.Position(20, 0)],
@@ -202,26 +202,26 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 			[
 				'goto option with multiple ID last',
 				new vscode.Position(14, 19),
-				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				path.resolve(__dirname, '../../testData/doc1/mySubFolder', 'sub.rst'),
 				new vscode.Position(3, 0)
 			],
 			[
 				'goto option with multiple ID first',
 				new vscode.Position(14, 11),
-				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				path.resolve(__dirname, '../../testData/doc1/mySubFolder', 'sub.rst'),
 				new vscode.Position(9, 0)
 			],
 			['negative goto', new vscode.Position(6, 3), '', new vscode.Position(0, 0)],
 			[
 				'goto definition for nested child need',
 				new vscode.Position(36, 18),
-				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				path.resolve(__dirname, '../../testData/doc1/mySubFolder', 'sub.rst'),
 				new vscode.Position(23, 0)
 			],
 			[
 				'goto definition for nested grand child need',
 				new vscode.Position(36, 26),
-				path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'),
+				path.resolve(__dirname, '../../testData/doc1/mySubFolder', 'sub.rst'),
 				new vscode.Position(41, 0)
 			],
 		];
@@ -254,7 +254,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 		await activate(docUri);
 
 		// Get sub sfolder file URI
-		const subFolderFileUri = vscode.Uri.file(path.resolve(__dirname, '../../testData/mySubFolder', 'sub.rst'));
+		const subFolderFileUri = vscode.Uri.file(path.resolve(__dirname, '../../testData/doc1/mySubFolder', 'sub.rst'));
 
 		const testCases: [string, vscode.Position, vscode.Location[]][] = [
 			[
@@ -272,7 +272,11 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 					new vscode.Location(
 						subFolderFileUri,
 						new vscode.Range(new vscode.Position(19, 18), new vscode.Position(19, 23))
-					)
+					),
+					new vscode.Location(
+						vscode.Uri.file(path.resolve(__dirname, '../../testData/doc1', 'test.txt')),
+						new vscode.Range(new vscode.Position(16, 11), new vscode.Position(16, 16))
+					),
 				]
 			],
 			[
@@ -295,7 +299,7 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 			)) as vscode.Location[];
 
 			if (name === 'find references multiple') {
-				assert.ok(allReferences.length === 3, `Find References over ${name} failed.`);
+				assert.ok(allReferences.length === 4, `Find References over ${name} failed.`);
 			}
 
 			if (name === 'find references single') {
@@ -319,7 +323,7 @@ suite('Sphinx-Needs Extension Tests for plaintext file', function () {
 	this.timeout(30000);
 
 	// Test Document
-	const doc_path = path.resolve(__dirname, '../../testData', 'test.txt');
+	const doc_path = path.resolve(__dirname, '../../testData/doc1', 'test.txt');
 	const docUri = vscode.Uri.file(doc_path);
 
 	// Test hover
@@ -351,6 +355,72 @@ suite('Sphinx-Needs Extension Tests for plaintext file', function () {
 			}
 		});
 		return Promise.all(promises);
+	});
+});
+
+suite('Sphinx-Needs Extension Tests for multi docs', function () {
+	this.timeout(30000);
+
+	// Test folder doc2
+	const doc2_path = path.resolve(__dirname, '../../testData/doc2', 'index.rst');
+	const doc2_uri = vscode.Uri.file(doc2_path);
+
+	// Test folder doc3
+	const doc3_path = path.resolve(__dirname, '../../testData/doc3', 'index.rst');
+	const doc3_uri = vscode.Uri.file(doc3_path);
+
+	// Test Hover
+	test('Test Hover', async () => {
+		// Activate extension
+		await activate(doc2_uri);
+		const testCasesDoc2: [string, vscode.Position, string][] = [
+			['inside needID', new vscode.Position(16, 11), 'Requirement content of REQ_2.'],
+			['inside non needID', new vscode.Position(3, 2), '']
+		];
+		const promises_doc2 = testCasesDoc2.map(async ([name, position, expectedMsg]) => {
+			const hovers = (await vscode.commands.executeCommand(
+				'vscode.executeHoverProvider',
+				doc2_uri,
+				position
+			)) as vscode.Hover[];
+
+			const hover = hovers[0];
+			if (expectedMsg) {
+				assert.equal(hover.contents.length, 1);
+				const displayText = (<vscode.MarkdownString>hover.contents[0]).value;
+				assert.ok(displayText.includes(expectedMsg), `Hover over ${name} failed.`);
+			} else {
+				// negative tests
+				assert.equal(hover, null);
+			}
+		});
+
+		// Activate extension
+		await activate(doc3_uri);
+		const testCasesDoc3: [string, vscode.Position, string][] = [
+			['inside needID', new vscode.Position(29, 11), 'Content of SPEC_3.'],
+			['inside non needID', new vscode.Position(3, 2), '']
+		];
+		const promises_doc3 = testCasesDoc3.map(async ([name, position, expectedMsg]) => {
+			const hovers = (await vscode.commands.executeCommand(
+				'vscode.executeHoverProvider',
+				doc3_uri,
+				position
+			)) as vscode.Hover[];
+
+			const hover = hovers[0];
+			if (expectedMsg) {
+				assert.equal(hover.contents.length, 1);
+				const displayText = (<vscode.MarkdownString>hover.contents[0]).value;
+				assert.ok(displayText.includes(expectedMsg), `Hover over ${name} failed.`);
+			} else {
+				// negative tests
+				assert.equal(hover, null);
+			}
+		});
+
+		return Promise.all([promises_doc2, promises_doc3]);
+
 	});
 });
 
