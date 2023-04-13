@@ -1,5 +1,5 @@
-Test-Env project
-================
+Test Doc1
+=========
 
 Just a test project for tests (tataaaa!).
 
@@ -8,7 +8,7 @@ Needs
 -----
 
 
-.. req:: First requirement
+.. req:: First requirement of doc1
    :id: REQ_1
    :status: open
    :links: SPEC_1,
@@ -18,7 +18,7 @@ Needs
    Requirement content of REQ_1.
 
 
-.. spec:: First specification
+.. spec:: First specification of doc1
    :id: SPEC_1
    :status: open
    :links: REQ_3
@@ -26,7 +26,7 @@ Needs
 
    Specification content of SPEC_1.
 
-.. spec:: Dummy Title
+.. spec:: Dummy Title of doc1
    :id: SPEC_3
    :status: open
 
@@ -48,3 +48,4 @@ REQ_2, SPEC_1, REQ_10, REQ_25
    :maxdepth: 2
 
    mySubFolder/sub.rst
+   test.txt

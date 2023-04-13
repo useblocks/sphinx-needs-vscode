@@ -1,9 +1,19 @@
 {
-    "sphinx-needs.needsJson": "${workspaceFolder}/needs.json",
-    "sphinx-needs.srcDir": "${workspaceFolder}",
+    "sphinx-needs.needsJson": "${workspaceFolder}/doc3/needs.json",
+    "sphinx-needs.srcDir": "${workspaceFolder}/doc3",
     "sphinx-needs.activateFiles": [
         "restructuredtext",
         "python",
         "plaintext"
+    ],
+    "sphinx-needs.folders": [
+        {
+            "needsJson": "${workspaceFolder}/doc2/needs.json",
+            "srcDir": "${workspaceFolder}/doc2"
+        },
+        {
+            "needsJson": "${workspaceFolder}/doc1/needs.json",
+            "srcDir": "${workspaceFolder}/doc1"
+        }
     ]
 }

@@ -16,7 +16,7 @@ import {
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
-	console.info('Activated Sphinx-Needs-VsCode Extension.');
+	console.info('SNV: Activated Sphinx-Needs-VsCode Extension.');
 
 	// TreeView of Sphinx-Needs Objects
 	const needsExplorerProvider = new NeedsExplorerProvider();
@@ -85,7 +85,7 @@ export function activate(context: ExtensionContext) {
 						language: element
 					});
 				} else {
-					console.warn(`Given language settings of activatedFiles not supported by VsCode: ${element}`);
+					console.warn(`SNV: Given language settings of activatedFiles not supported by VsCode: ${element}`);
 				}
 			});
 		});

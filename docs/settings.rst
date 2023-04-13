@@ -75,6 +75,28 @@ Example:
 
    "sphinx-needs.explorerItemHoverOptions": ["tags", "doctype"]
 
+.. _multiDocs:
+
+``sphinx-needs.folders``
+------------------------
+
+Specify **a list of objects of** :ref:`needsJsonPath` and :ref:`srcDir` to support multiple docs inside one workspace. Default is: [].
+
+Example:
+
+.. code-block:: json
+
+   "sphinx-needs.folders": [
+      {
+         "needsJson": "${workspaceFolder}/doc2/needs.json",
+         "srcDir": "${workspaceFolder}/doc2"
+      },
+      {
+         "needsJson": "${workspaceFolder}/doc1/needs.json",
+         "srcDir": "${workspaceFolder}/doc1"
+      }
+   ]
+
 
 Settings configuration
 ----------------------

@@ -23,9 +23,26 @@ interface Need {
 interface SNVConfig {
 	needsJson: string | undefined;
 	srcDir: string | undefined;
+	folders: DocConf[];
 	explorerOptions: string[] | undefined;
 	explorerItemHoverOptions: string[] | undefined;
 	loggingLevel: LogLevel;
+}
+
+interface DocConf {
+	needsJson: string;
+	srcDir: string;
+}
+
+interface NeedsInfo {
+	needs: Needs;
+	allFiles: string[];
+	src_dir: string;
+	needs_json: string;
+}
+
+interface NeedsInfos {
+	[path: string]: NeedsInfo | undefined;
 }
 
 let tslogger: TimeStampedLogger;
@@ -36,15 +53,31 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 	>();
 	readonly onDidChangeTreeData: vscode.Event<NeedTree[] | undefined> = this._onDidChangeTreeData.event;
 
-	needsObjects: Needs = {};
+	needsInfo: NeedsInfo = {
+		needs: {},
+		allFiles: [],
+		src_dir: '',
+		needs_json: ''
+	};
 	snvConfigs: SNVConfig;
+	needsInfos: NeedsInfos = {};
+	isMultiDocs = false;
 
 	constructor() {
 		// Get workspace configurations and init snvConfigs
 		this.snvConfigs = this.getSNVConfigurations();
 
-		// Get needs objects from needs.json and update needsObjects
-		this.loadNeedsJson(this.snvConfigs.needsJson);
+		// Initial logger
+		tslogger = new TimeStampedLogger(this.snvConfigs.loggingLevel);
+
+		// Check needsJson and srcDir from workspace configurations
+		this.check_wk_configs();
+
+		// Load all needsJsons from workspace configurations
+		this.needsInfos = this.loadAllNeedsJsonsToInfos();
+
+		// Only watch active editor change to update tree view when is multi docs
+		vscode.window.onDidChangeActiveTextEditor(() => this.onActiveEditorChanged());
 
 		// Create file watcher for needs.json
 		this.watcher();
@@ -55,7 +88,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 
 	openNeedsJson(): void {
 		// Open needsJson
-		const need_json_path = this.snvConfigs.needsJson;
+		const need_json_path = this.needsInfo.needs_json;
 		if (need_json_path && this.pathExists(need_json_path)) {
 			vscode.window.showTextDocument(vscode.Uri.file(need_json_path));
 		}
@@ -91,15 +124,33 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 	}
 
 	private watcher(): void {
-		// Create file watcher for needs.json
-		if (this.snvConfigs.needsJson && this.pathExists(this.snvConfigs.needsJson)) {
-			const watcher = vscode.workspace.createFileSystemWatcher(this.snvConfigs.needsJson);
-			// Listen to change of watched needs.json
-			watcher.onDidChange((e) => {
-				// Update needs objects from needs.json
-				this.loadNeedsJson(e.fsPath);
-				// Update tree
+		// Create file watcher for all relevant needs json files
+		const all_curr_needs_jsons = Object.keys(this.needsInfos);
+		const watcher = vscode.workspace.createFileSystemWatcher('**/*.json');
+		// Watch for file content change
+		watcher.onDidChange((uri) => {
+			if (all_curr_needs_jsons.indexOf(uri.fsPath) >= 0) {
+				this.needsInfos[uri.fsPath] = this.loadNeedsJsonToInfo(uri.fsPath);
 				this._onDidChangeTreeData.fire(undefined);
+			}
+		});
+		// Watch for file create
+		watcher.onDidCreate((uri) => {
+			if (all_curr_needs_jsons.indexOf(uri.fsPath) >= 0) {
+				this.needsInfos[uri.fsPath] = this.loadNeedsJsonToInfo(uri.fsPath);
+				this._onDidChangeTreeData.fire(undefined);
+			}
+		});
+	}
+
+	private onActiveEditorChanged(): void {
+		if (this.isMultiDocs && vscode.window.activeTextEditor) {
+			const curr_doc = vscode.window.activeTextEditor.document.uri.fsPath;
+			Object.values(this.needsInfos).forEach((need_info) => {
+				if (need_info?.allFiles && need_info?.allFiles.indexOf(curr_doc) >= 0) {
+					this.needsInfo = need_info;
+					this._onDidChangeTreeData.fire(undefined);
+				}
 			});
 		}
 	}
@@ -127,10 +178,11 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 				updateTreeData = true;
 			}
 
+			let reloadNeedsJson = false;
 			// Check if needsJson path got changed
 			if (this.snvConfigs.needsJson !== newConfig.needsJson) {
 				this.snvConfigs.needsJson = newConfig.needsJson;
-				this.loadNeedsJson(this.snvConfigs.needsJson);
+				reloadNeedsJson = true;
 				updateTreeData = true;
 				// Update watcher for new needs.json
 				this.watcher();
@@ -139,18 +191,45 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			// Check if srcDir changed
 			if (this.snvConfigs.srcDir !== newConfig.srcDir) {
 				this.snvConfigs.srcDir = newConfig.srcDir;
+				reloadNeedsJson = true;
+				updateTreeData = true;
+			}
+
+			// Check if folders changed
+			if (this.snvConfigs.folders !== newConfig.folders) {
+				this.snvConfigs.folders = newConfig.folders;
+				reloadNeedsJson = true;
+				updateTreeData = true;
+			}
+
+			// Check configurations and isMultiDocs
+			this.check_wk_configs();
+			if (!this.isMultiDocs) {
 				updateTreeData = true;
 			}
 
 			// Update tree data
 			if (updateTreeData) {
+				// Reload needsJson to needs infos
+				if (reloadNeedsJson) {
+					this.needsInfos = this.loadAllNeedsJsonsToInfos();
+					// If empty needsInfos, then update needsInfo
+					if (Object.keys(this.needsInfos).length <= 0) {
+						this.needsInfo = {
+							needs: {},
+							allFiles: [],
+							src_dir: '',
+							needs_json: ''
+						};
+					}
+				}
 				this._onDidChangeTreeData.fire(undefined);
 			}
 		});
 	}
 
 	getChildren(element?: NeedTree | NeedOptionItem): Thenable<vscode.TreeItem[]> {
-		if (!this.needsObjects) {
+		if (!this.needsInfo.needs) {
 			return Promise.resolve([]);
 		}
 
@@ -160,13 +239,13 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		}
 
 		// Get and show need options
-		if (element.id && element.id in this.needsObjects && this.snvConfigs.explorerOptions) {
+		if (element.id && element.id in this.needsInfo.needs && this.snvConfigs.explorerOptions) {
 			const optionItems: NeedOptionItem[] = [];
 			this.snvConfigs.explorerOptions.forEach((option) => {
 				if (element.id) {
 					// check if option exists in needs.json
-					if (option in this.needsObjects[element.id]) {
-						for (const [need_option, op_value] of Object.entries(this.needsObjects[element.id])) {
+					if (option in this.needsInfo.needs[element.id]) {
+						for (const [need_option, op_value] of Object.entries(this.needsInfo.needs[element.id])) {
 							if (option === need_option) {
 								optionItems.push(
 									new NeedOptionItem(option + ': ' + op_value, vscode.TreeItemCollapsibleState.None)
@@ -175,7 +254,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 						}
 					} else {
 						optionItems.push(new NeedOptionItem(option + ': None', vscode.TreeItemCollapsibleState.None));
-						tslogger.warn(`Need option ${option} not exists for ${element.id}.`);
+						tslogger.warn(`SNV Explorer -> Need option ${option} not exists for ${element.id}.`);
 					}
 				}
 			});
@@ -192,81 +271,175 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		// Get relevant configuration settings
 		let needs_json_path: string | undefined = vscode.workspace.getConfiguration('sphinx-needs').get('needsJson');
 		let confPyDir: string | undefined = vscode.workspace.getConfiguration('sphinx-needs').get('srcDir');
+		const wk_folders: DocConf[] | undefined = vscode.workspace.getConfiguration('sphinx-needs').get('folders');
 		const shownNeedOptions: string[] | undefined = vscode.workspace
 			.getConfiguration('sphinx-needs')
 			.get('explorerOptions');
 		const hoverNeedOptions: string[] | undefined = vscode.workspace
 			.getConfiguration('sphinx-needs')
 			.get('explorerItemHoverOptions');
-		// Get logging level
 		let logLevel: LogLevel | undefined = vscode.workspace.getConfiguration('sphinx-needs').get('loggingLevel');
 		if (!logLevel) {
 			logLevel = 'warn';
 		}
-		tslogger = new TimeStampedLogger(logLevel);
 
+		// Replace ${workspaceFolder} from the configurations if needed
 		const workspaceFolderpath =
 			vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 				? vscode.workspace.workspaceFolders[0].uri.fsPath
 				: undefined;
-
+		const conf_folders: DocConf[] = [];
 		if (workspaceFolderpath) {
 			needs_json_path = needs_json_path?.replace('${workspaceFolder}', workspaceFolderpath);
 			confPyDir = confPyDir?.replace('${workspaceFolder}', workspaceFolderpath);
-		}
-
-		// Check if path exists of needsJson and srcDir
-		if (!confPyDir) {
-			console.warn(`SNV Explorer -> empty srcDir: ${confPyDir}`);
-		}
-
-		if (!needs_json_path) {
-			console.warn(`SNV Explorer -> needsJson path not exists: ${needs_json_path}`);
+			wk_folders?.forEach((folder) => {
+				conf_folders.push({
+					needsJson: folder.needsJson.replace('${workspaceFolder}', workspaceFolderpath),
+					srcDir: folder.srcDir.replace('${workspaceFolder}', workspaceFolderpath)
+				});
+			});
+		} else {
+			console.error(`SNV Explorer -> Can't resolve current workspaceFolder path: ${workspaceFolderpath}`);
 		}
 
 		return {
 			needsJson: needs_json_path,
 			srcDir: confPyDir,
+			folders: conf_folders,
 			explorerOptions: shownNeedOptions,
 			explorerItemHoverOptions: hoverNeedOptions,
 			loggingLevel: logLevel
 		};
 	}
 
-	private loadNeedsJson(needsJsonFilePath: string | undefined): void {
+	private check_wk_configs() {
+		// Check if path exists of needsJson and srcDir
+		if (!this.snvConfigs.needsJson) {
+			tslogger.warn(`SNV Explorer -> needsJson path not exists: ${this.snvConfigs.needsJson}`);
+		} else if (!this.pathExists(this.snvConfigs.needsJson)) {
+			tslogger.error(
+				`SNV Explorer -> given sphinx-needs.needsJson path not exists: ${this.snvConfigs.needsJson}`
+			);
+		}
+
+		if (!this.snvConfigs.srcDir) {
+			tslogger.warn('SNV Explorer -> sphinx-needs.srcDir is empty or undefined');
+		} else if (!this.pathExists(this.snvConfigs.srcDir)) {
+			tslogger.error(`SNV Explorer -> given sphinx-needs.srcDir path not exists: ${this.snvConfigs.srcDir}`);
+		}
+
+		// Check if path of needsJson and srcDir from sphinx-needs.folders exist
+		if (this.snvConfigs.folders.length <= 0) {
+			this.isMultiDocs = false;
+		} else {
+			this.snvConfigs.folders.forEach((fd) => {
+				if (!fd.needsJson) {
+					tslogger.warn('SNV Explorer -> needsJson empty or undefined in sphinx-needs.folders');
+				} else if (!this.pathExists(fd.needsJson)) {
+					tslogger.error(
+						`SNV Explorer -> needsJson path in sphinx-needs.folders not exists: ${fd.needsJson}`
+					);
+				}
+				if (!fd.srcDir) {
+					tslogger.warn('SNV Explorer -> srcDir empty or undefined in sphinx-needs.folders');
+				} else if (!this.pathExists(fd.srcDir)) {
+					tslogger.error(`SNV Explorer -> srcDir path in sphinx-needs.folders not exists: ${fd.srcDir}`);
+				}
+			});
+			this.isMultiDocs = true;
+		}
+	}
+
+	private loadAllNeedsJsonsToInfos(): NeedsInfos {
+		const all_needs_infos: NeedsInfos = {};
+		// Load needsJson from sphinx-needs.folders
+		this.snvConfigs.folders.forEach((fd) => {
+			if (!(fd.needsJson in all_needs_infos)) {
+				all_needs_infos[fd.needsJson] = this.loadNeedsJsonToInfo(fd.needsJson);
+			} else {
+				tslogger.warn('SNV Explorer -> Duplicate needsJson config in sphinx-needs.folders');
+			}
+		});
+		// Load sphinx-needs.needsJson
+		if (this.snvConfigs.needsJson && this.snvConfigs.srcDir && !(this.snvConfigs.needsJson in all_needs_infos)) {
+			all_needs_infos[this.snvConfigs.needsJson] = this.loadNeedsJsonToInfo(this.snvConfigs.needsJson);
+		}
+		return all_needs_infos;
+	}
+
+	private loadNeedsJsonToInfo(needsJsonFilePath: string | undefined): NeedsInfo | undefined {
 		// Check needs.json path and get needs object from needs.json if exists
 		if (needsJsonFilePath && this.pathExists(needsJsonFilePath)) {
+			tslogger.debug(`SNV Explorer -> Loaded nedds json: ${needsJsonFilePath}`);
+
 			// Read needs.json
 			const needsJson = JSON.parse(fs.readFileSync(needsJsonFilePath, 'utf-8'));
+
 			// Get needs objects from current_version
 			const curr_version: string = needsJson['current_version'];
-			this.needsObjects = needsJson['versions'][curr_version]['needs'];
+			const needs_objects: Needs = needsJson['versions'][curr_version]['needs'];
+
 			// Check and get doctype for nested child needs
-			for (const need of Object.values(this.needsObjects)) {
+			for (const need of Object.values(needs_objects)) {
 				let temp_parent_id: string;
 				let temp_parent: Need;
 				// Get child need
 				if (!need['doctype'] && need['parent_need']) {
 					// search up to top parent need to get info of doctype
 					temp_parent_id = need['parent_need'];
-					temp_parent = this.needsObjects[temp_parent_id];
+					temp_parent = needs_objects[temp_parent_id];
 					while (temp_parent['parent_need']) {
 						if (!temp_parent['parent_need']) {
 							break;
 						}
-						temp_parent = this.needsObjects[temp_parent['parent_need']];
+						temp_parent = needs_objects[temp_parent['parent_need']];
 					}
 					need['doctype'] = temp_parent['doctype'];
 				}
 			}
-		} else {
-			this.needsObjects = {};
+
+			// Get current srcDir
+			let curr_src_dir = '';
+			if (this.snvConfigs.needsJson === needsJsonFilePath) {
+				if (this.snvConfigs.srcDir) {
+					curr_src_dir = this.snvConfigs.srcDir;
+				}
+			} else {
+				this.snvConfigs.folders?.forEach((fd) => {
+					if (fd.needsJson === needsJsonFilePath) {
+						curr_src_dir = fd.srcDir;
+					}
+				});
+			}
+
+			// Calculate all files paths in current srcDir
+			const all_files_path: string[] = [];
+			let need_doc_path: string;
+			Object.values(needs_objects).forEach((nd) => {
+				if (curr_src_dir.endsWith('/')) {
+					need_doc_path = curr_src_dir + nd.docname + nd.doctype;
+				} else {
+					need_doc_path = curr_src_dir + '/' + nd.docname + nd.doctype;
+				}
+
+				if (all_files_path.indexOf(need_doc_path) === -1) {
+					all_files_path.push(need_doc_path);
+				}
+			});
+
+			const needs_info: NeedsInfo = {
+				needs: needs_objects,
+				allFiles: all_files_path,
+				src_dir: curr_src_dir,
+				needs_json: needsJsonFilePath
+			};
+			return needs_info;
 		}
 	}
 
 	private getNeedFilePath(need: Need): vscode.Uri {
 		// Get file path of current need
-		const curr_need: Need = this.needsObjects[need.id];
+		const curr_need: Need = this.needsInfo.needs[need.id];
 
 		// Check if docname and doctype exist in need object
 		if (!('docname' in curr_need)) {
@@ -280,8 +453,8 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 
 		// Calculate doc path uri for current need
 		let curr_need_file_path = '';
-		if (this.snvConfigs.srcDir) {
-			curr_need_file_path = path.resolve(this.snvConfigs.srcDir, curr_need.docname + curr_need.doctype);
+		if (this.needsInfo.src_dir) {
+			curr_need_file_path = path.resolve(this.needsInfo.src_dir, curr_need.docname + curr_need.doctype);
 			if (!this.pathExists(curr_need_file_path)) {
 				tslogger.warn(`SNV Explorer -> doc path for Need ${need.id} not exists: ${curr_need_file_path}`);
 			}
@@ -292,17 +465,17 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 
 	private getNeedTree(): NeedTree[] {
 		const needsItems: NeedTree[] = [];
-		if (this.needsObjects) {
-			Object.values(this.needsObjects).forEach((need) => {
+		if (this.needsInfo.needs) {
+			Object.values(this.needsInfo.needs).forEach((need) => {
 				// Check if Need ID matches Need Objects key entry
-				if (!(need['id'] in this.needsObjects)) {
+				if (!(need['id'] in this.needsInfo.needs)) {
 					tslogger.warn(`SNV Explorer -> Need object entry of ${need.id} not exits in given needs.json`);
 				} else {
 					// Calculate needed hoverOptionsValues for hover over item
 					const hoverOptionValues: string[] = [];
 					this.snvConfigs.explorerItemHoverOptions?.forEach((op) => {
 						if (!(op in need)) {
-							tslogger.warn(`SNV Explorer: given need option ${op} not exists.`);
+							tslogger.warn(`SNV Explorer -> given need option ${op} not exists.`);
 						} else {
 							for (const [key, value] of Object.entries(need)) {
 								if (op === key && value && value.length) {
@@ -413,7 +586,7 @@ function read_need_doc_contents(fileUri: vscode.Uri): string[] | null {
 		const doc_content_lines = doc_content.split('\n');
 		return doc_content_lines;
 	} catch (err) {
-		tslogger.error(`Error read docoment: ${err}`);
+		tslogger.error(`SNV Explorer -> Error read docoment: ${err}`);
 	}
 	return null;
 }
@@ -427,7 +600,7 @@ function find_directive_definition(doc_content_lines: string[], curr_need: Need)
 			line.indexOf(id_pattern) !== -1;
 		})
 	) {
-		tslogger.error(`No defintion found of ${curr_need.id}.`);
+		tslogger.error(`SNV Explorer -> No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_id_line_idx = doc_content_lines.findIndex((line) => line.indexOf(id_pattern) !== -1);
@@ -442,7 +615,7 @@ function find_directive_definition(doc_content_lines: string[], curr_need: Need)
 			line.indexOf(directive_pattern) !== -1;
 		})
 	) {
-		tslogger.error(`No defintion found of ${curr_need.id}.`);
+		tslogger.error(`SNV Explorer -> No defintion found of ${curr_need.id}.`);
 		return null;
 	}
 	const found_reverse_directive_line_idx = new_doc_content_lines
