@@ -52,3 +52,7 @@ hover.
 **Sphinx-Needs Views:**
 
 ![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/sn-views.gif)
+
+**Sphinx-Needs Current Explorer View**
+
+![image](https://raw.githubusercontent.com/useblocks/sphinx-needs-vscode/main/docs/_images/sn-current-view.gif)

@@ -34,15 +34,20 @@ interface DocConf {
 	srcDir: string;
 }
 
+interface NeedsPerDoc {
+	[doc_path: string]: Needs;
+}
+
 interface NeedsInfo {
 	needs: Needs;
 	allFiles: string[];
 	src_dir: string;
 	needs_json: string;
+	needs_per_doc: NeedsPerDoc;
 }
 
 interface NeedsInfos {
-	[path: string]: NeedsInfo | undefined;
+	[path: string]: NeedsInfo;
 }
 
 let tslogger: TimeStampedLogger;
@@ -57,13 +62,15 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		needs: {},
 		allFiles: [],
 		src_dir: '',
-		needs_json: ''
+		needs_json: '',
+		needs_per_doc: {}
 	};
 	snvConfigs: SNVConfig;
 	needsInfos: NeedsInfos = {};
 	isMultiDocs = false;
+	currEditorView = false;
 
-	constructor() {
+	constructor(currEditorView: boolean) {
 		// Get workspace configurations and init snvConfigs
 		this.snvConfigs = this.getSNVConfigurations();
 
@@ -76,7 +83,10 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		// Load all needsJsons from workspace configurations
 		this.needsInfos = this.loadAllNeedsJsonsToInfos();
 
-		// Only watch active editor change to update tree view when is multi docs
+		// Check if current treeview for active editor
+		this.currEditorView = currEditorView;
+
+		// Watch active editor change to update tree view
 		vscode.window.onDidChangeActiveTextEditor(() => this.onActiveEditorChanged());
 
 		// Create file watcher for needs.json
@@ -144,14 +154,33 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 	}
 
 	private onActiveEditorChanged(): void {
-		if (this.isMultiDocs && vscode.window.activeTextEditor) {
+		if (vscode.window.activeTextEditor) {
 			const curr_doc = vscode.window.activeTextEditor.document.uri.fsPath;
-			Object.values(this.needsInfos).forEach((need_info) => {
+			// Check if current active editor relevant
+			let found_need_info = false;
+			let found_need_info_key = '';
+			for (const [idx, need_info] of Object.entries(this.needsInfos)) {
 				if (need_info?.allFiles && need_info?.allFiles.indexOf(curr_doc) >= 0) {
-					this.needsInfo = need_info;
-					this._onDidChangeTreeData.fire(undefined);
+					found_need_info = true;
+					found_need_info_key = idx;
 				}
-			});
+			}
+
+			if (found_need_info) {
+				this.needsInfo = this.needsInfos[found_need_info_key];
+				if (this.currEditorView) {
+					this.needsInfo.needs = this.needsInfo.needs_per_doc[curr_doc];
+				}
+			} else {
+				this.needsInfo = {
+					needs: {},
+					allFiles: [],
+					src_dir: '',
+					needs_json: '',
+					needs_per_doc: {}
+				};
+			}
+			this._onDidChangeTreeData.fire(undefined);
 		}
 	}
 
@@ -219,7 +248,8 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 							needs: {},
 							allFiles: [],
 							src_dir: '',
-							needs_json: ''
+							needs_json: '',
+							needs_per_doc: {}
 						};
 					}
 				}
@@ -367,7 +397,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 		return all_needs_infos;
 	}
 
-	private loadNeedsJsonToInfo(needsJsonFilePath: string | undefined): NeedsInfo | undefined {
+	private loadNeedsJsonToInfo(needsJsonFilePath: string | undefined): NeedsInfo {
 		// Check needs.json path and get needs object from needs.json if exists
 		if (needsJsonFilePath && this.pathExists(needsJsonFilePath)) {
 			tslogger.debug(`SNV Explorer -> Loaded nedds json: ${needsJsonFilePath}`);
@@ -412,9 +442,10 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 				});
 			}
 
-			// Calculate all files paths in current srcDir
+			// Calculate all files paths in current srcDir and needs_per_doc
 			const all_files_path: string[] = [];
 			let need_doc_path: string;
+			const needs_per_doc: NeedsPerDoc = {};
 			Object.values(needs_objects).forEach((nd) => {
 				if (curr_src_dir.endsWith('/')) {
 					need_doc_path = curr_src_dir + nd.docname + nd.doctype;
@@ -425,16 +456,32 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 				if (all_files_path.indexOf(need_doc_path) === -1) {
 					all_files_path.push(need_doc_path);
 				}
+
+				// Calculate needs objects per doc
+				if (!(need_doc_path in needs_per_doc)) {
+					needs_per_doc[need_doc_path] = {};
+				}
+				if (!(nd.id in needs_per_doc[need_doc_path])) {
+					needs_per_doc[need_doc_path][nd.id] = nd;
+				}
 			});
 
 			const needs_info: NeedsInfo = {
 				needs: needs_objects,
 				allFiles: all_files_path,
 				src_dir: curr_src_dir,
-				needs_json: needsJsonFilePath
+				needs_json: needsJsonFilePath,
+				needs_per_doc: needs_per_doc
 			};
 			return needs_info;
 		}
+		return {
+			needs: {},
+			allFiles: [],
+			src_dir: '',
+			needs_json: '',
+			needs_per_doc: {}
+		};
 	}
 
 	private getNeedFilePath(need: Need): vscode.Uri {

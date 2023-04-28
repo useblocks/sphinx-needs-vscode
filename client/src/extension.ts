@@ -19,7 +19,7 @@ export function activate(context: ExtensionContext) {
 	console.info('SNV: Activated Sphinx-Needs-VsCode Extension.');
 
 	// TreeView of Sphinx-Needs Objects
-	const needsExplorerProvider = new NeedsExplorerProvider();
+	const needsExplorerProvider = new NeedsExplorerProvider(false);
 	window.createTreeView('sphinxNeedsExplorer', {
 		treeDataProvider: needsExplorerProvider
 	});
@@ -47,6 +47,12 @@ export function activate(context: ExtensionContext) {
 	commands.registerCommand('sphinxNeedsHelp.openUrl', (item) => {
 		//env.openExternal(Uri.parse(item.link));
 		env.openExternal(Uri.parse(item));
+	});
+
+	// Treeview of Sphinx-Needs objects in current active editor
+	const needsCurrentProvider = new NeedsExplorerProvider(true);
+	window.createTreeView('sphinxNeedsCurrent', {
+		treeDataProvider: needsCurrentProvider
 	});
 
 	// The server is implemented in node

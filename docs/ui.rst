@@ -61,8 +61,22 @@ Help View
 
 This view displays useful links about Sphinx-Needs and current extension Sphinx-Needs-VsCode.
 
+.. _currView:
+
+Current View
+^^^^^^^^^^^^
+
+This current view displays all the Sphinx-Needs objects in current active opened file.
+
 Example
 ^^^^^^^
 
+**Sphinx-Needs View**
+
 .. image:: /_images/sn-views.gif
+    :align: center
+
+**Current View**
+
+.. image:: /_images/sn-current-view.gif
     :align: center
