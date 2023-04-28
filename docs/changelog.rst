@@ -7,6 +7,7 @@ Changelog
 Under development
 
 * Added setting :ref:`multiDocs` to support multiple docs inside one workspace, see :ref:`advanced`.
+* Added explorer :ref:`currView` for sphinx-needs objects of current active editor.
 
 0.2.1
 -----
