@@ -1,10 +1,15 @@
 Changelog
 =========
 
-0.3.0
+0.3.1
 -----
 
 Under development
+
+0.3.0
+-----
+
+Released: 21.07.2023
 
 * Added setting :ref:`multiDocs` to support multiple docs inside one workspace, see :ref:`advanced`.
 * Added explorer :ref:`currView` for sphinx-needs objects of current active editor.
