@@ -745,7 +745,7 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 	wsConfigs.ideSnippets.forEach((ideSnippet) => {
 		if (context_word.startsWith(ideSnippet.snippetStart)) {
 			directive_items.push({
-				label: [ideSnippet.snippetStart, ideSnippet.snippet].join(" "),
+				label: [ideSnippet.snippetStart, ideSnippet.snippet].join(' '),
 				insertText: ideSnippet.snippet,
 				insertTextFormat: InsertTextFormat.Snippet,
 				kind: CompletionItemKind.Snippet
