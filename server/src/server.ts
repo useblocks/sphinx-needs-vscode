@@ -98,11 +98,18 @@ interface DocConf {
 	srcDir: string;
 }
 
+interface IdeSnippet {
+	needsType: string;
+	snippetStart: string;
+	snippet: string;
+}
+
 interface WsConfigs {
 	needsJson: string;
 	srcDir: string;
 	folders: DocConf[];
 	loggingLevel: LogLevel;
+	ideSnippets: IdeSnippet[];
 }
 
 connection.onInitialize((params: InitializeParams) => {
@@ -257,6 +264,14 @@ async function get_wk_conf_settings() {
 		confLogLevel = value;
 	});
 
+	// Get configuration of sphinx-needs.ideSnippets
+	const ideSnippets: IdeSnippet[] = [];
+	await connection.workspace.getConfiguration('sphinx-needs.ideSnippets').then((value) => {
+		value.forEach((snippet: IdeSnippet) => {
+			ideSnippets.push(snippet);
+		});
+	});
+
 	// Get configuration of sphinx-needs.folders
 	const wk_folders: DocConf[] = [];
 	await connection.workspace.getConfiguration('sphinx-needs.folders').then((value) => {
@@ -272,7 +287,8 @@ async function get_wk_conf_settings() {
 		needsJson: needs_json_path,
 		srcDir: doc_src_dir,
 		folders: wk_folders,
-		loggingLevel: confLogLevel
+		loggingLevel: confLogLevel,
+		ideSnippets: ideSnippets
 	};
 	return configs;
 }
@@ -725,8 +741,23 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 		return complete_path_to_need_id(_textDocumentPosition, context_word, curr_needs_info);
 	}
 
+	const directive_items: CompletionItem[] = [];
+	wsConfigs.ideSnippets.forEach((ideSnippet) => {
+		if (context_word.startsWith(ideSnippet.snippetStart)) {
+			directive_items.push({
+				label: [ideSnippet.snippetStart, ideSnippet.snippet].join(" "),
+				insertText: ideSnippet.snippet,
+				insertTextFormat: InsertTextFormat.Snippet,
+				kind: CompletionItemKind.Snippet
+			});
+		}
+	});
+	if (directive_items.length > 0) {
+		return directive_items;
+	}
 	// if word starts with '..', provide completion suggestion for directive snippets
-	if (context_word.startsWith('..')) {
+	// REMARK: This is left for backwards compatibility
+	else if (context_word.startsWith('..')) {
 		// Return a list of suggestion of directive of different types
 		const directive_items: CompletionItem[] = [];
 		curr_needs_info.needs_types.forEach((need_type) => {

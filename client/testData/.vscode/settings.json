@@ -15,5 +15,12 @@
             "needsJson": "${workspaceFolder}/doc1/needs.json",
             "srcDir": "${workspaceFolder}/doc1"
         }
+    ],
+    "sphinx-needs.ideSnippets": [
+        {
+            "needsType": "req",
+            "snippetStart": ":::",
+            "snippet": "{req} ${1:Title}\n:id: ${2:NeedID}\n\n${3:Content}"
+        }
     ]
 }
