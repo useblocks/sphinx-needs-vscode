@@ -28,12 +28,12 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 				{
 					label: '.. req::',
 					kind: vscode.CompletionItemKind.Snippet,
-					insertText: ' req:: Dummy Title\n\t:id: NeedID\n\t:status: open\n\n\tContent.'
+					insertText: ' req:: ${1:Dummy Title}\n\t:id: ${2:REQ_}\n\t:status: ${3:open}\n\n\t${4:Content}.'
 				},
 				{
 					label: '.. spec::',
 					kind: vscode.CompletionItemKind.Snippet,
-					insertText: ' spec:: Dummy Title\n\t:id: NeedID\n\t:status: open\n\n\tContent.'
+					insertText: ' spec:: ${1:Dummy Title}\n\t:id: ${2:SPEC_}\n\t:status: ${3:open}\n\n\t${4:Content}.'
 				}
 			]
 		};

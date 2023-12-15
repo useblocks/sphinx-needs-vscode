@@ -44,6 +44,8 @@ let wsConfigs: WsConfigs;
 
 let tslogger: TimeStampedLogger;
 
+let needs_types_to_needs_prefix: NeedsTypesToNeedsPrefix;
+
 // Define type of Need, Needs, NeedsJsonObject, and NeedsTypesDocsInfo
 interface NeedsJsonObj {
 	created: string;
@@ -62,6 +64,15 @@ interface NeedsJsonObj {
 
 interface Needs {
 	[need_id: string]: Need;
+}
+
+interface NeedsTypesToNeedsPrefix {
+	[need_type: string]: NeedsTypesPrefix;
+}
+
+interface NeedsTypesPrefix {
+	needs: Need[];
+	prefix: string;
 }
 
 interface Need {
@@ -165,7 +176,77 @@ connection.onInitialized(async () => {
 
 	// Check and load all needsJson from workspace configurations
 	needs_infos = load_all_needs_json(wsConfigs);
+
+	needs_types_to_needs_prefix = load_needs_types_to_needs_id(needs_infos);
+	determine_prefix_for_needs_types(needs_types_to_needs_prefix);
 });
+
+// Creates a map from needs_type to Needs
+function load_needs_types_to_needs_id(needs_infos: NeedsInfos): NeedsTypesToNeedsPrefix {
+	const needs_types_to_needs_prefix: NeedsTypesToNeedsPrefix = {};
+
+	Object.values(needs_infos).forEach((needs_types_docs_info) => {
+		if (needs_types_docs_info === undefined) {
+			return;
+		}
+
+		Object.values(needs_types_docs_info.needs).forEach((need) => {
+			if (!(need.type in needs_types_to_needs_prefix)) {
+				const needs_types_prefix: NeedsTypesPrefix = {
+					needs: [],
+					prefix: ''
+				};
+				needs_types_to_needs_prefix[need.type] = needs_types_prefix;
+			}
+
+			if (!needs_id_in_needs(need.id, needs_types_to_needs_prefix[need.type].needs)) {
+				needs_types_to_needs_prefix[need.type].needs.push(need);
+			}
+		});
+	});
+
+	return needs_types_to_needs_prefix;
+}
+
+function needs_id_in_needs(needs_id: string, needs: Need[]) {
+	for (let i = 0; i < needs.length; i++) {
+		if (needs[i].id === needs_id) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Determines the prefix for a set of need_types.
+// The algorithm is super simple:
+// For each need_type look at the first two needIDs and get the common prefix
+// The moment a numeral character is observed, it is considered not a prefix anymore
+function determine_prefix_for_needs_types(needs_types_to_needs_prefix: NeedsTypesToNeedsPrefix) {
+	Object.values(needs_types_to_needs_prefix).forEach((needs_types_prefix) => {
+		if (needs_types_prefix.needs.length === 1) {
+			needs_types_prefix.prefix = needs_types_prefix.needs[0].id;
+		} else if (needs_types_prefix.needs.length > 1) {
+			const needs_id_1 = needs_types_prefix.needs[0].id;
+			const needs_id_2 = needs_types_prefix.needs[1].id;
+			const current_prefix: string[] = [];
+
+			for (let i = 0; i < needs_id_1.length; i++) {
+				if (i >= needs_id_2.length) {
+					break;
+				}
+				if (needs_id_1.charAt(i) !== needs_id_2.charAt(i)) {
+					break;
+				}
+				if (!isNaN(Number(needs_id_1.charAt(i)))) {
+					break;
+				}
+				current_prefix.push(needs_id_1.charAt(i));
+			}
+
+			needs_types_prefix.prefix = current_prefix.join('');
+		}
+	});
+}
 
 // Load all needsJson
 function load_all_needs_json(configs: WsConfigs) {
@@ -548,6 +629,14 @@ function generate_random_need_id(): string {
 	return random_id;
 }
 
+function generate_need_id_from_prefix(needs_type: string): string {
+	if (!(needs_type in needs_types_to_needs_prefix)) {
+		return generate_random_need_id();
+	}
+
+	return needs_types_to_needs_prefix[needs_type].prefix;
+}
+
 // Completion suggestion for documentation location of given need type
 function complete_doc_path(docs: string[], doc_pattern: string): CompletionItem[] {
 	// Get all doc paths that start with given pattern
@@ -730,7 +819,12 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 		// Return a list of suggestion of directive of different types
 		const directive_items: CompletionItem[] = [];
 		curr_needs_info.needs_types.forEach((need_type) => {
-			const text = [` ${need_type}:: Dummy Title`, '\t:id: NeedID', '\t:status: open\n', '\tContent.'].join('\n');
+			const text = [
+				` ${need_type}:: \${1:Dummy Title}`,
+				`\t:id: \${2:${generate_need_id_from_prefix(need_type)}}`,
+				'\t:status: ${3:open}\n',
+				'\t${4:Content}.'
+			].join('\n');
 			directive_items.push({
 				label: `.. ${need_type}::`,
 				insertText: `${text}`,
