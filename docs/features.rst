@@ -5,10 +5,10 @@ Features
 
 .. _code_completion:
 
-Code Completion
+Custom Code Completion
 ---------------
 
-The extension supports "**code completion**" which inserts a *need* directive with some predefined options.
+The extension supports "**code completion**" which inserts a user-defined *need* directive with custom options.
 
 .. image:: /_images/features_code_completion_snippets.gif
    :align: center
