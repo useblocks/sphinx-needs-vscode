@@ -842,7 +842,7 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 			{
 				label: ':need:',
 				detail: 'need role',
-				insertText: 'need:`ID`',
+				insertText: 'need:`${1:ID}`',
 				insertTextFormat: InsertTextFormat.Snippet,
 				kind: CompletionItemKind.Snippet
 			},
