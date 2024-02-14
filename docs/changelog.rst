@@ -6,6 +6,8 @@ Changelog
 
 Under development
 
+* Fixed directive snippet random id generation. (`#33 <https://github.com/useblocks/sphinx-needs-vscode/issues/33>`_)
+
 0.3.0
 -----
 

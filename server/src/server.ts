@@ -536,9 +536,8 @@ function get_word(params: TextDocumentPositionParams): string {
 // Generate hash value from given string
 function generate_hash() {
 	const crypto = require('crypto');
-	// TODO: need to adapt later, dummy here for now
-	const need_id_part = 'NeedID';
-	const hash = crypto.createHash('sha256').update(need_id_part).digest('hex').toString();
+	const salt = crypto.randomBytes(256).toString('hex');
+	const hash = crypto.createHash('sha256').update(salt).digest('hex').toString();
 	return hash;
 }
 
@@ -730,7 +729,12 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 		// Return a list of suggestion of directive of different types
 		const directive_items: CompletionItem[] = [];
 		curr_needs_info.needs_types.forEach((need_type) => {
-			const text = [` ${need_type}:: Dummy Title`, '\t:id: NeedID', '\t:status: open\n', '\tContent.'].join('\n');
+			const text = [
+				` ${need_type}:: Dummy Title`,
+				`\t:id: ${need_type.toUpperCase()}_${generate_random_need_id()}`,
+				'\t:status: open\n',
+				'\tContent.'
+			].join('\n');
 			directive_items.push({
 				label: `.. ${need_type}::`,
 				insertText: `${text}`,
@@ -744,6 +748,24 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 
 	// if word starts with ':', provide completion suggestion for role or option
 	if (context_word.startsWith(':')) {
+		// Find need type from line above if possible, applying only to following usecase,
+		//   .. req:: Title
+		//      :id:
+		// where directive definition ..req:: line is directly above :id: line
+		let found_need_type = '';
+		const document = documents.get(_textDocumentPosition.textDocument.uri);
+		const line_above = {
+			start: { line: _textDocumentPosition.position.line - 1, character: 0 },
+			end: { line: _textDocumentPosition.position.line, character: 0 }
+		};
+		if (document) {
+			const line_above_text = document.getText(line_above);
+			const found = line_above_text.match(/.. [A-Za-z]*::/g);
+			if (found) {
+				found_need_type = found[0].replace('.. ', '').replace('::', '');
+			}
+		}
+
 		return [
 			{
 				label: ':need:',
@@ -755,7 +777,7 @@ connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): Com
 			{
 				label: ':id:',
 				detail: 'needs option',
-				insertText: `id: ${generate_random_need_id()}`,
+				insertText: `id: ${found_need_type.toUpperCase()}_${generate_random_need_id()}`,
 				insertTextFormat: InsertTextFormat.Snippet,
 				kind: CompletionItemKind.Snippet
 			}
