@@ -1,4 +1,4 @@
 {
-    "sphinx-needs.needsJson": "${workspaceFolder}/docs/needs.json",
-    "sphinx-needs.srcDir": "${workspaceFolder}/docs"
+    "sphinx-needs.needsJson": "${workspaceFolder}/client/testData//doc1/needs.json",
+    "sphinx-needs.srcDir": "${workspaceFolder}/client/testData/doc1"
 }

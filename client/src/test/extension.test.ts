@@ -28,12 +28,12 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 				{
 					label: '.. req::',
 					kind: vscode.CompletionItemKind.Snippet,
-					insertText: ' req:: Dummy Title\n\t:id: NeedID\n\t:status: open\n\n\tContent.'
+					insertText: ' req:: Dummy Title\n\t:id: REQ_[a-z0-9]*\n\t:status: open\n\n\tContent.'
 				},
 				{
 					label: '.. spec::',
 					kind: vscode.CompletionItemKind.Snippet,
-					insertText: ' spec:: Dummy Title\n\t:id: NeedID\n\t:status: open\n\n\tContent.'
+					insertText: ' spec:: Dummy Title\n\t:id: SPEC_[a-z0-9]*\n\t:status: open\n\n\tContent.'
 				}
 			]
 		};
@@ -99,9 +99,9 @@ suite('Sphinx-Needs Extension Tests for rst file', function () {
 					const actualItem = actualCompletionList.items[i];
 					assert.equal(actualItem.label, expectedItem.label);
 					assert.equal(actualItem.kind, expectedItem.kind);
-					assert.equal(
+					assert.match(
 						(<vscode.SnippetString>actualItem.insertText).value,
-						<vscode.SnippetString>expectedItem.insertText
+						new RegExp(<string>expectedItem.insertText)
 					);
 				});
 			} else if (name === 'trigger :') {
