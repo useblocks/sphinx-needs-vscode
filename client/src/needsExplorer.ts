@@ -446,11 +446,13 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			const all_files_path: string[] = [];
 			let need_doc_path: string;
 			const needs_per_doc: NeedsPerDoc = {};
+
+            		const path = require('path'); //to get the proper file separator character
 			Object.values(needs_objects).forEach((nd) => {
-				if (curr_src_dir.endsWith('/')) {
-					need_doc_path = curr_src_dir + nd.docname + nd.doctype;
+				if (curr_src_dir.endsWith(path.sep)) {
+					need_doc_path = path.normalize(curr_src_dir + nd.docname + nd.doctype);
 				} else {
-					need_doc_path = curr_src_dir + '/' + nd.docname + nd.doctype;
+					need_doc_path = path.normalize(curr_src_dir + path.sep + nd.docname + nd.doctype);
 				}
 
 				if (all_files_path.indexOf(need_doc_path) === -1) {

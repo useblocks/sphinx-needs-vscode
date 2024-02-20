@@ -1,6 +1,8 @@
 'use strict';
 
 import fs = require('fs');
+import url = require('url');
+
 
 import {
 	createConnection,
@@ -107,7 +109,7 @@ interface WsConfigs {
 
 connection.onInitialize((params: InitializeParams) => {
 	if (params.workspaceFolders) {
-		workspace_folder_uri = params.workspaceFolders[0].uri;
+		workspace_folder_uri = url.fileURLToPath(decodeURIComponent(params.workspaceFolders[0].uri)); //extract the path from uri.
 	} else {
 		workspace_folder_uri = '';
 	}
@@ -237,7 +239,8 @@ function check_wk_confs(configs: WsConfigs) {
 
 // Get workspace settings
 async function get_wk_conf_settings() {
-	const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
+	const cal_wk_folder_uri: string = workspace_folder_uri //workspace is normalized already
+	//const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
 
 	// Get configuration of sphinx-needs.needsJson
 	let needs_json_path = '';
@@ -324,7 +327,8 @@ connection.onDidChangeWatchedFiles((_change) => {
 	let needs_json_file_changes: FileEvent | undefined;
 	const changed_files = _change.changes;
 	changed_files.forEach((changed_file) => {
-		const changed_file_uri = changed_file.uri.replace('file://', '');
+		const changed_file_uri : string = url.fileURLToPath(decodeURIComponent(changed_file.uri));
+		//const changed_file_uri = changed_file.uri.replace('file://', '');
 		if (Object.keys(needs_infos).indexOf(changed_file_uri) >= 0) {
 			needs_json_file_changes = changed_file;
 		}
@@ -332,7 +336,8 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 	// Needs Json file changed
 	if (needs_json_file_changes) {
-		const changed_needs_json = needs_json_file_changes.uri.replace('file://', '');
+		const changed_needs_json : string = url.fileURLToPath(needs_json_file_changes.uri);
+		//const changed_needs_json = needs_json_file_changes.uri.replace('file://', '');
 		// Check file change type
 		if (needs_json_file_changes.type === 1) {
 			// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
@@ -490,8 +495,9 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 	}
 
 	// Calulcate all files full paths in current srcDir
+	const path = require('path'); //to get the proper file separator character
 	Object.keys(needs_types_docs_info.needs_per_doc).forEach((fp) => {
-		needs_types_docs_info.all_files_abs_paths.push(curr_src_dir + fp);
+		needs_types_docs_info.all_files_abs_paths.push(path.normalize(curr_src_dir + fp)); //use the normalized path
 	});
 
 	return needs_types_docs_info;
@@ -798,13 +804,17 @@ function get_curr_needs_info(params: TextDocumentPositionParams): NeedsTypesDocs
 		return needs_infos[wsConfigs.needsJson];
 	} else {
 		// Get current document file path
-		const curr_doc_uri = params.textDocument.uri.replace('file://', '');
+		const curr_doc_uri: string = url.fileURLToPath(decodeURIComponent(params.textDocument.uri));
+		//const curr_doc_uri = params.textDocument.uri.replace('file://', '');     
+
 		// Check and determine which needsJson infos to use
 		for (const [need_json, need_info] of Object.entries(needs_infos)) {
 			if (need_info?.all_files_abs_paths && need_info.all_files_abs_paths.indexOf(curr_doc_uri) >= 0) {
 				return needs_infos[need_json];
 			}
 		}
+    		//Enable autocompletion in new rst file. Return the default json file as specified vscode setting. 
+    		return needs_infos[wsConfigs.needsJson];        
 	}
 }
 
@@ -874,8 +884,10 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
 		return null;
 	}
 
+    	const url = require('url'); //pass the path as uri
+
 	return {
-		uri: doc_path,
+		uri:  url.pathToFileURL(doc_path), //encoding uri. 
 		range: {
 			start: { line: need_directive_location, character: 0 },
 			end: { line: need_directive_location, character: 0 }
@@ -941,9 +953,11 @@ connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Loc
 				const startPosID = doc_contents[found_link_id_line_idx].indexOf(need_id);
 				const endPosID = startPosID + need_id.length;
 
+                		const url = require('url');   
+            
 				// Get Location of linked need ID inside this directive definition
 				const location: Location = {
-					uri: doc_path,
+					uri: url.pathToFileURL(doc_path),//pass the path as uri 
 					range: {
 						start: { line: found_link_id_line_idx, character: startPosID },
 						end: { line: found_link_id_line_idx, character: endPosID }
@@ -960,6 +974,8 @@ connection.onReferences((_textDocumentPosition: TextDocumentPositionParams): Loc
 });
 
 function find_directive_location(doc_content_lines: string[], curr_need: Need): number | null {
+    
+    	const path = require('path'); //to get the proper file separator character    
 	// Get line of need id definition with pattern {:id: need_id}
 	const id_pattern = `:id: ${curr_need.id}`;
 	// Check if id_pattern exists in target document
@@ -994,8 +1010,9 @@ function find_directive_location(doc_content_lines: string[], curr_need: Need): 
 }
 
 function read_doc_content(doc_path: string): string[] | null {
-	try {
-		const doc_content: string = fs.readFileSync(doc_path, 'utf8');
+    	const path = require('path'); //to get the proper file separator character
+    	try {
+		const doc_content: string = fs.readFileSync(path.normalize(doc_path), 'utf8');
 		const doc_content_lines = doc_content.split('\n');
 		return doc_content_lines;
 	} catch (err) {
