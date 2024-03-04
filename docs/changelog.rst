@@ -1,10 +1,15 @@
 Changelog
 =========
 
-0.3.1
+0.3.2
 -----
 
 Under development
+
+0.3.1
+-----
+
+Released: 04.03.2024
 
 * Fixed directive snippet random id generation. (`#33 <https://github.com/useblocks/sphinx-needs-vscode/issues/33>`_)
 
