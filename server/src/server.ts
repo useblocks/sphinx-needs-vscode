@@ -109,7 +109,8 @@ interface WsConfigs {
 
 connection.onInitialize((params: InitializeParams) => {
 	if (params.workspaceFolders) {
-		workspace_folder_uri = url.fileURLToPath(params.workspaceFolders[0].uri);
+		// for windows decode needed: e.g. decodeURIComponent('/c%3A/') -> "/c:/"
+		workspace_folder_uri = url.fileURLToPath(decodeURIComponent(params.workspaceFolders[0].uri));
 	} else {
 		workspace_folder_uri = '';
 	}
@@ -324,7 +325,7 @@ connection.onDidChangeWatchedFiles((_change) => {
 	let needs_json_file_changes: FileEvent | undefined;
 	const changed_files = _change.changes;
 	changed_files.forEach((changed_file) => {
-		const changed_file_uri = url.fileURLToPath(changed_file.uri);
+		const changed_file_uri = url.fileURLToPath(decodeURIComponent(changed_file.uri));
 		if (Object.keys(needs_infos).indexOf(changed_file_uri) >= 0) {
 			needs_json_file_changes = changed_file;
 		}
@@ -332,7 +333,7 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 	// Needs Json file changed
 	if (needs_json_file_changes) {
-		const changed_needs_json = url.fileURLToPath(needs_json_file_changes.uri);
+		const changed_needs_json = url.fileURLToPath(decodeURIComponent(needs_json_file_changes.uri));
 		// Check file change type
 		if (needs_json_file_changes.type === 1) {
 			// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
@@ -800,7 +801,7 @@ function get_curr_needs_info(params: TextDocumentPositionParams): NeedsTypesDocs
 		return needs_infos[wsConfigs.needsJson];
 	} else {
 		// Get current document file path
-		const curr_doc_uri = url.fileURLToPath(params.textDocument.uri);
+		const curr_doc_uri = url.fileURLToPath(decodeURIComponent(params.textDocument.uri));
 		// Check and determine which needsJson infos to use
 		for (const [need_json, need_info] of Object.entries(needs_infos)) {
 			if (need_info?.all_files_abs_paths && need_info.all_files_abs_paths.indexOf(curr_doc_uri) >= 0) {
