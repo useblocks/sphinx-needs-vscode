@@ -447,7 +447,7 @@ export class NeedsExplorerProvider implements vscode.TreeDataProvider<vscode.Tre
 			let need_doc_path: string;
 			const needs_per_doc: NeedsPerDoc = {};
 			Object.values(needs_objects).forEach((nd) => {
-				need_doc_path = path.join(curr_src_dir, nd.docname, nd.doctype);
+				need_doc_path = path.join(curr_src_dir, nd.docname + nd.doctype);
 
 				if (all_files_path.indexOf(need_doc_path) === -1) {
 					all_files_path.push(need_doc_path);
