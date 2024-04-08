@@ -6,6 +6,8 @@ Changelog
 
 Under development
 
+* Support for windows.
+
 0.3.1
 -----
 

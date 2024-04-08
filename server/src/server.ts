@@ -1,6 +1,8 @@
 'use strict';
 
 import fs = require('fs');
+import fs_path = require('path');
+import url = require('url');
 
 import {
 	createConnection,
@@ -107,7 +109,8 @@ interface WsConfigs {
 
 connection.onInitialize((params: InitializeParams) => {
 	if (params.workspaceFolders) {
-		workspace_folder_uri = params.workspaceFolders[0].uri;
+		// for windows decode needed: e.g. decodeURIComponent('/c%3A/') -> "/c:/"
+		workspace_folder_uri = url.fileURLToPath(decodeURIComponent(params.workspaceFolders[0].uri));
 	} else {
 		workspace_folder_uri = '';
 	}
@@ -237,18 +240,16 @@ function check_wk_confs(configs: WsConfigs) {
 
 // Get workspace settings
 async function get_wk_conf_settings() {
-	const cal_wk_folder_uri: string = workspace_folder_uri.replace('file://', '');
-
 	// Get configuration of sphinx-needs.needsJson
 	let needs_json_path = '';
 	await connection.workspace.getConfiguration('sphinx-needs.needsJson').then((value) => {
-		needs_json_path = value.replace('${workspaceFolder}', cal_wk_folder_uri);
+		needs_json_path = value.replace('${workspaceFolder}', workspace_folder_uri);
 	});
 
 	// Get configuration of sphinx-needs.srcDir
 	let doc_src_dir = '';
 	await connection.workspace.getConfiguration('sphinx-needs.srcDir').then((value) => {
-		doc_src_dir = value.replace('${workspaceFolder}', cal_wk_folder_uri);
+		doc_src_dir = value.replace('${workspaceFolder}', workspace_folder_uri);
 	});
 
 	// Get configuration of sphinx-needs.loggingLevel
@@ -262,8 +263,8 @@ async function get_wk_conf_settings() {
 	await connection.workspace.getConfiguration('sphinx-needs.folders').then((value) => {
 		value.forEach((conf: DocConf) => {
 			wk_folders.push({
-				needsJson: conf.needsJson.replace('${workspaceFolder}', cal_wk_folder_uri),
-				srcDir: conf.srcDir.replace('${workspaceFolder}', cal_wk_folder_uri)
+				needsJson: conf.needsJson.replace('${workspaceFolder}', workspace_folder_uri),
+				srcDir: conf.srcDir.replace('${workspaceFolder}', workspace_folder_uri)
 			});
 		});
 	});
@@ -324,7 +325,7 @@ connection.onDidChangeWatchedFiles((_change) => {
 	let needs_json_file_changes: FileEvent | undefined;
 	const changed_files = _change.changes;
 	changed_files.forEach((changed_file) => {
-		const changed_file_uri = changed_file.uri.replace('file://', '');
+		const changed_file_uri = url.fileURLToPath(decodeURIComponent(changed_file.uri));
 		if (Object.keys(needs_infos).indexOf(changed_file_uri) >= 0) {
 			needs_json_file_changes = changed_file;
 		}
@@ -332,7 +333,7 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 	// Needs Json file changed
 	if (needs_json_file_changes) {
-		const changed_needs_json = needs_json_file_changes.uri.replace('file://', '');
+		const changed_needs_json = url.fileURLToPath(decodeURIComponent(needs_json_file_changes.uri));
 		// Check file change type
 		if (needs_json_file_changes.type === 1) {
 			// Usecase: configuration of NeedsJson file not in sync with needs json file name, user changed file name to sync
@@ -432,8 +433,8 @@ function load_needs_info_from_json(given_needs_json_path: string): NeedsTypesDoc
 			}
 		});
 	}
-	if (!curr_src_dir.endsWith('/')) {
-		curr_src_dir = curr_src_dir + '/';
+	if (!curr_src_dir.endsWith(fs_path.sep)) {
+		curr_src_dir = curr_src_dir + fs_path.sep;
 	}
 
 	// Initialize needs_types_docs_info
@@ -580,11 +581,13 @@ function complete_doc_path(docs: string[], doc_pattern: string): CompletionItem[
 
 	// At least two paths found, need to check if path contains folder and subfolder
 	const cnt_path_sep: number[] = [];
+	const regex = new RegExp(`[${fs_path.sep}]`, 'g');
+
 	found_paths.forEach((path) => {
-		cnt_path_sep.push((path.match(/[/]/g) || []).length);
+		cnt_path_sep.push((path.match(regex) || []).length);
 	});
 	const max_path_length: number = Math.max(...cnt_path_sep);
-	const curr_path_length: number = (doc_pattern.match(/[/]/g) || []).length;
+	const curr_path_length: number = (doc_pattern.match(regex) || []).length;
 
 	if (max_path_length === 0 && curr_path_length === 0) {
 		const sub_path_items: CompletionItem[] = [];
@@ -600,11 +603,11 @@ function complete_doc_path(docs: string[], doc_pattern: string): CompletionItem[
 
 	const sub_paths: string[] = [];
 	found_paths.forEach((path) => {
-		if ((path.match(/[/]/g) || []).length >= curr_path_length) {
+		if ((path.match(regex) || []).length >= curr_path_length) {
 			const new_sub_path = path
-				.split('/')
+				.split(fs_path.sep)
 				.slice(curr_path_length, curr_path_length + 1)
-				.join('/');
+				.join(fs_path.sep);
 
 			if (!sub_paths.includes(new_sub_path)) {
 				sub_paths.push(new_sub_path);
@@ -798,7 +801,7 @@ function get_curr_needs_info(params: TextDocumentPositionParams): NeedsTypesDocs
 		return needs_infos[wsConfigs.needsJson];
 	} else {
 		// Get current document file path
-		const curr_doc_uri = params.textDocument.uri.replace('file://', '');
+		const curr_doc_uri = url.fileURLToPath(decodeURIComponent(params.textDocument.uri));
 		// Check and determine which needsJson infos to use
 		for (const [need_json, need_info] of Object.entries(needs_infos)) {
 			if (need_info?.all_files_abs_paths && need_info.all_files_abs_paths.indexOf(curr_doc_uri) >= 0) {
