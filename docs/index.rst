@@ -1,3 +1,9 @@
+THIS EXTENSION IS DEPRECATED AND UNMAINTAINED. PLEASE UPDATE TO THE NEW `ubCode <https://marketplace.visualstudio.com/items?itemName=useblocks.ubcode>`_ EXTENSION.
+===================================================================================================================================================================
+
+This extension is deprecated and not maintained anymore. Please try the new extension 
+`ubCode <https://marketplace.visualstudio.com/items?itemName=useblocks.ubcode>`_.
+
 Sphinx Needs Vscode Documentation
 =================================
 

@@ -4,7 +4,7 @@
     "author": {
         "name": "team useblocks"
     },
-    "version": "0.3.1",
+    "version": "0.3.2",
     "license": "MIT",
     "engines": {
         "vscode": "^1.67.0"

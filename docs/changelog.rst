@@ -4,7 +4,9 @@ Changelog
 0.3.2
 -----
 
-Under development
+Released: 08.08.2024
+
+* Archived this extension and announced new extension `ubCode <https://marketplace.visualstudio.com/items?itemName=useblocks.ubcode>`_
 
 0.3.1
 -----
