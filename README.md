@@ -1,3 +1,7 @@
+> [!NOTE] 
+> **THIS EXTENSION IS DEPRECATED AND UNMAINTAINED. PLEASE TRY THE NEW EXTENSION [ubCode](https://marketplace.visualstudio.com/items?itemName=useblocks.ubcode)**.
+>
+
 # Sphinx-Needs for Visual Studio Code
 
 [Sphinx-Needs](https://sphinx-needs.readthedocs.io/en/latest/) is a
